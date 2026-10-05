@@ -1,0 +1,139 @@
+/* RS3 Planner - look and feel (fantasy, phone-first). Colours are defined once here. */
+
+:root {
+  --forest: #0E1712;        /* page background */
+  --panel: #16241B;         /* card background */
+  --frame-outer: #2E4636;   /* 1px card border */
+  --frame-inner: #24382A;   /* inner frame line, 4px inside the border */
+  --parchment: #F0E8D6;     /* main text */
+  --muted: #B9C3B2;         /* secondary text */
+  --glacial: #A8DCEB;       /* progress bars, selected options */
+  --glacial-bg: #17323A;    /* selected option background */
+  --crimson: #A61E32;       /* main buttons */
+  --crimson-text: #FFF4F0;  /* text on crimson */
+  --gold: #D9A441;          /* thin trim on crimson buttons */
+  --accent-red: #E8838F;    /* label accent */
+  --accent-green: #8CCB7E;  /* label accent */
+}
+
+/* Fonts are bundled in static/fonts (SIL Open Font License; licences included there). */
+@font-face { font-family: "Uncial Antiqua"; src: url("/static/fonts/UncialAntiqua-Regular.ttf") format("truetype"); font-display: swap; }
+@font-face { font-family: "Cinzel"; src: url("/static/fonts/Cinzel-Variable.ttf") format("truetype"); font-weight: 400 900; font-display: swap; }
+@font-face { font-family: "Alegreya"; src: url("/static/fonts/Alegreya-Variable.ttf") format("truetype"); font-weight: 400 900; font-display: swap; }
+@font-face { font-family: "Alegreya"; src: url("/static/fonts/Alegreya-Italic-Variable.ttf") format("truetype"); font-weight: 400 900; font-style: italic; font-display: swap; }
+
+/* ---- Page ---- */
+html, body, .q-page, .q-layout, .nicegui-content {
+  background: var(--forest) !important;
+  color: var(--parchment);
+}
+body { font-family: "Alegreya", Georgia, serif; font-size: 17px; line-height: 1.4; }
+.nicegui-content { padding: 0 !important; }
+
+/* One centred column, never wider than 480px; extra bottom room for the nav bar. */
+.page {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 20px 16px 104px;
+  gap: 16px;
+}
+
+/* ---- Text styles ---- */
+.title    { font-family: "Uncial Antiqua", serif; font-size: 30px; line-height: 1.15; color: var(--parchment); }
+.subtitle { font-family: "Uncial Antiqua", serif; font-size: 21px; color: var(--parchment); }
+.label    { font-family: "Cinzel", serif; font-weight: 700; font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent-red); }
+.label.green { color: var(--accent-green); }
+.heading  { font-family: "Cinzel", serif; font-weight: 700; font-size: 18px; color: var(--parchment); }
+.muted    { color: var(--muted); font-size: 15px; }
+.small    { font-size: 14px; }
+.big-number { font-family: "Cinzel", serif; font-weight: 700; font-size: 48px; line-height: 1; color: var(--parchment); }
+.icon     { display: inline-flex; line-height: 0; }
+
+/* ---- Panels: 1px border plus an inner frame line 4px inside it ---- */
+.panel {
+  position: relative;
+  width: 100%;
+  background: var(--panel);
+  border: 1px solid var(--frame-outer);
+  border-radius: 10px;
+  padding: 18px 18px;
+  gap: 8px;
+}
+.panel::before {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border: 1px solid var(--frame-inner);
+  border-radius: 6px;
+  pointer-events: none;
+}
+.panel.crimson-frame { border-color: var(--crimson); }
+.panel.crimson-frame::before { border-color: var(--crimson); opacity: 0.55; }
+
+/* A row inside a panel: name on the left, number on the right. */
+.row-line.centered { align-items: center; }
+.row-line { width: 100%; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: nowrap; }
+.row-line > .muted { white-space: nowrap; }   /* keep "868,033 XP left" on one line */
+
+/* ---- Progress bars (no gradients) ---- */
+.bar { width: 100%; height: 10px; background: var(--frame-inner); border-radius: 5px; overflow: hidden; }
+.bar.thin { height: 6px; }
+.bar-fill { height: 100%; background: var(--glacial); border-radius: 5px; }
+
+/* ---- Buttons ---- */
+/* Quasar buttons get their colours from us (".q-btn" in front makes our rules win over
+   Quasar's default blue); "unelevated" removes shadows. */
+.q-btn { border-radius: 10px !important; min-height: 44px; }
+.q-btn::before { box-shadow: none !important; }
+.q-btn.btn-crimson {
+  background: var(--crimson) !important;
+  color: var(--crimson-text) !important;
+  border: 1px solid var(--gold) !important;
+  font-family: "Cinzel", serif; font-weight: 700; font-size: 18px; letter-spacing: 0.04em;
+  min-height: 56px; width: 100%;
+}
+.q-btn.btn-quiet {
+  background: var(--panel) !important;
+  color: var(--parchment) !important;
+  border: 1px solid var(--frame-outer) !important;
+  font-family: "Cinzel", serif; font-weight: 600; font-size: 14px;
+}
+
+/* Chips: small choices (hours, click time). */
+.q-btn.chip {
+  background: var(--panel) !important;
+  color: var(--parchment) !important;
+  border: 1px solid var(--frame-outer) !important;
+  font-family: "Cinzel", serif; font-weight: 600; font-size: 15px;
+  min-height: 44px; min-width: 52px; padding: 0 10px;   /* five hour chips fit one phone-width row */
+}
+.q-btn.chip.selected, .q-btn.choice.selected {
+  background: var(--glacial-bg) !important;
+  color: var(--glacial) !important;
+  border-color: var(--glacial) !important;
+}
+
+/* Big choice cards (AFK / Active). */
+.q-btn.choice {
+  background: var(--panel) !important;
+  color: var(--parchment) !important;
+  border: 1px solid var(--frame-outer) !important;
+  min-height: 112px; flex: 1 1 0;
+  font-family: "Cinzel", serif; font-weight: 700; font-size: 18px;
+}
+.choice .q-btn__content { flex-direction: column; gap: 8px; }
+
+/* ---- Bottom navigation ---- */
+.bottom-nav {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
+  background: var(--panel);
+  border-top: 1px solid var(--frame-outer);
+}
+.bottom-nav-inner { max-width: 480px; margin: 0 auto; display: flex; }
+.q-btn.nav-btn {
+  flex: 1 1 0; min-height: 60px !important; border-radius: 0 !important;
+  color: var(--muted) !important; background: transparent !important;
+  font-family: "Cinzel", serif; font-weight: 600; font-size: 13px;
+}
+.q-btn.nav-btn.active { color: var(--glacial) !important; }

@@ -10,10 +10,38 @@ It only reads public web pages. It never touches or controls the game client.
 
 ## Requirements
 
-- Python 3 (already included on most Linux systems). Nothing to install.
+- Python 3 (already included on most Linux systems).
 - An internet connection.
+- The terminal scripts need nothing else. The browser app needs NiceGUI,
+  installed into a virtual environment (below).
 
-## How to run
+## Browser app
+
+A phone-friendly page with Home, Ready to play and your plan.
+
+**One-time setup** (creates `.venv/`, the project's private Python toolbox,
+and installs NiceGUI into it, not into your system):
+
+```bash
+python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+```
+
+**Start it** (from this folder):
+
+```bash
+.venv/bin/python app.py
+```
+
+Then open **http://127.0.0.1:8080** in your browser. Stop it with Ctrl+C in the terminal.
+
+- It only listens on this computer (127.0.0.1), so other devices on your network can't reach it.
+- It fetches RuneMetrics once when it starts, and again only when you press **Refresh**.
+- Every fetch saves a snapshot to `data/snapshots/` (kept out of git) for a future Progress screen.
+- Fonts (Uncial Antiqua, Cinzel, Alegreya; SIL Open Font License) and icons (Lucide; ISC licence)
+  are bundled in `static/`, with their licences, so it works offline.
+- All numbers come from the same code as the terminal scripts.
+
+## How to run the terminal version
 
 Open a terminal in this folder, then:
 

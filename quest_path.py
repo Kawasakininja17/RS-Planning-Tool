@@ -173,11 +173,12 @@ def unlock_count(title, unlocks, quests):
     return sum(1 for u in unlocks if title in full_chain(u["final_quest"], quests))
 
 
-def pick_tonight(goal, unlocks, quests, account):
+def ranked_doable(goal, unlocks, quests, account):
     """
-    Best quest to do tonight. Returns (title, on_goal_path) or (None, False).
+    Every quest you can do now, best first. Returns (titles, on_goal_path).
     Rank: on the way to the most unlocks, then shortest, then easiest.
     Quests on the big goal's path come first; others only if none are ready.
+    (Also used by the browser app for "Tonight's quest" and "also on the way".)
     """
     def rank(title):
         difficulty = account["quests"].get(title, {}).get("difficulty", 999)
@@ -186,13 +187,20 @@ def pick_tonight(goal, unlocks, quests, account):
     def doable(titles):
         return [t for t in titles if quest_state(t, quests, account)[0] in ("ready", "started")]
 
+    # sorted() keeps ties in a fixed order (chain order here, name order below).
     on_path = doable(full_chain(goal["final_quest"], quests))
     if on_path:
-        return min(on_path, key=rank), True
-    elsewhere = doable({t for u in unlocks for t in full_chain(u["final_quest"], quests)})
+        return sorted(on_path, key=rank), True
+    elsewhere = doable(sorted({t for u in unlocks for t in full_chain(u["final_quest"], quests)}))
     if elsewhere:
-        return min(elsewhere, key=rank), False
-    return None, False
+        return sorted(elsewhere, key=rank), False
+    return [], False
+
+
+def pick_tonight(goal, unlocks, quests, account):
+    """Best quest to do tonight. Returns (title, on_goal_path) or (None, False)."""
+    titles, on_path = ranked_doable(goal, unlocks, quests, account)
+    return (titles[0], on_path) if titles else (None, False)
 
 
 # ---------------------------------------------------------------------------

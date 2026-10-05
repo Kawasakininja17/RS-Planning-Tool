@@ -105,6 +105,45 @@ def pick_paths(ready):
     return path_a, path_b, path_c
 
 
+def build_plan(methods, account, max_minutes):
+    """
+    Sort every method into "ready" or "ruled out", then pick paths A, B and C
+    with a one-line reason each. Used by main() here and by the browser app (app.py).
+    Returns {"ready": [...], "ruled_out": [(method, reasons)], "paths": [(title, method, why)]}.
+    """
+    ready, ruled_out = [], []
+    for method in methods:
+        blocked, warnings = check_method_for_session(method, account, max_minutes)
+        method["_warnings"] = warnings
+        if blocked:
+            ruled_out.append((method, blocked))
+        else:
+            if method["type"] == "training":
+                method["_gap"] = gap_to_99(method, account)
+            ready.append(method)
+
+    path_a, path_b, path_c = pick_paths(ready)
+
+    why_a = (f"{path_a['skill']} is your closest skill to 99 with a ready method "
+             f"({path_a['_gap']:,.0f} XP left).") if path_a else ""
+    why_b = "Highest XP/hr of your ready training methods (judged on the low end of each range)."
+    why_c = "Highest gp/hr of your ready money methods."
+    # Warn when the ranking compares before-tax and after-tax figures.
+    tax_bases = {m["gp_after_tax"] for m in ready if m["type"] == "money"}
+    if len(tax_bases) > 1:
+        before = [m["name"] for m in ready if m["type"] == "money" and m["gp_after_tax"] is False]
+        why_c += (" CAUTION: this ranking mixes before-tax and after-tax figures; "
+                  f"after tax, {', '.join(before)} would earn less than shown.")
+
+    return {
+        "ready": ready,
+        "ruled_out": ruled_out,
+        "paths": [("PATH A: finish something", path_a, why_a),
+                  ("PATH B: max XP", path_b, why_b),
+                  ("PATH C: gold", path_c, why_c)],
+    }
+
+
 # ---------------------------------------------------------------------------
 # Printing
 # ---------------------------------------------------------------------------
@@ -127,32 +166,49 @@ def rate_text(low, high, unit):
     return f"{low:,} {unit}" if low == high else f"{low:,}-{high:,} {unit}"
 
 
+def path_lines(method, account, hours):
+    """
+    The rate and "what N hours gets you" lines for one path, as (label, text) pairs.
+    Labels: "Rate", "<N> hours", "Also", or "" for a continuation line.
+    Used by print_path() here and by the browser app (app.py).
+    """
+    lines = []
+    skills = method["skill"].split("/")
+    if method["gp_per_hour"] is not None:
+        gp = method["gp_per_hour"]
+        lines.append(("Rate", f"{gp:,} gp/hr"))
+        lines.append((f"{hours:g} hours", f"about {gp * hours:,.0f} gp"))
+    if method["xp_per_hour_low"] is not None:
+        low, high = method["xp_per_hour_low"], method["xp_per_hour_high"]
+        if method["gp_per_hour"] is None:
+            lines.append(("Rate", rate_text(low, high, "XP/hr")))
+        gain_low, gain_high = low * hours, high * hours
+        gained = f"+{gain_low:,.0f} XP" if low == high else f"+{gain_low:,.0f} to +{gain_high:,.0f} XP"
+        label = f"{hours:g} hours" if method["gp_per_hour"] is None else "Also"
+        if len(skills) == 1:
+            lines.append((label, f"{gained} -> {level_change_text(account, skills[0], gain_low, gain_high)}"))
+        else:
+            lines.append((label, f"{gained} in total. The wiki doesn't say how it splits; "
+                                 "if all of it went into one skill:"))
+            for skill in skills:
+                lines.append(("", level_change_text(account, skill, gain_low, gain_high)))
+    return lines
+
+
 def print_path(title, method, why, account, hours):
     print(title)
     if method is None:
         print("  Nothing in methods.json fits this session.\n")
         return
 
-    skills = method["skill"].split("/")
     print(f"  Method:  {method['name']} ({method['skill']})")
-
-    if method["gp_per_hour"] is not None:
-        gp = method["gp_per_hour"]
-        print(f"  Rate:    {gp:,} gp/hr")
-        print(f"  {hours:g} hours: about {gp * hours:,.0f} gp")
-    if method["xp_per_hour_low"] is not None:
-        low, high = method["xp_per_hour_low"], method["xp_per_hour_high"]
-        if method["gp_per_hour"] is None:
-            print(f"  Rate:    {rate_text(low, high, 'XP/hr')}")
-        gain_low, gain_high = low * hours, high * hours
-        gained = f"+{gain_low:,.0f} XP" if low == high else f"+{gain_low:,.0f} to +{gain_high:,.0f} XP"
-        label = f"  {hours:g} hours:" if method["gp_per_hour"] is None else "  Also:   "
-        if len(skills) == 1:
-            print(f"{label} {gained} -> {level_change_text(account, skills[0], gain_low, gain_high)}")
+    for label, text in path_lines(method, account, hours):
+        if label in ("Rate", "Also"):
+            print(f"  {label}:    {text}")
+        elif label == "":
+            print(f"           {text}")
         else:
-            print(f"{label} {gained} in total. The wiki doesn't say how it splits; if all of it went into one skill:")
-            for skill in skills:
-                print(f"           {level_change_text(account, skill, gain_low, gain_high)}")
+            print(f"  {label}: {text}")
 
     print(f"  Why:     {why}")
     for warning in method["_warnings"]:
@@ -226,41 +282,17 @@ def main():
         unlocks, quests = load_quest_files()   # stops here if the quest files have problems
         goal = choose_goal(unlocks, quests, account, preset=args.goal)
 
-    # Sort every method into "ready" or "ruled out".
-    ready, ruled_out = [], []
-    for method in methods:
-        blocked, warnings = check_method_for_session(method, account, max_minutes)
-        method["_warnings"] = warnings
-        if blocked:
-            ruled_out.append((method, blocked))
-        else:
-            if method["type"] == "training":
-                method["_gap"] = gap_to_99(method, account)
-            ready.append(method)
-
-    path_a, path_b, path_c = pick_paths(ready)
+    plan = build_plan(methods, account, max_minutes)
 
     print(f"\nSession plan for {args.user}: {hours:g} hours, a click at most every {max_minutes:g} minutes, "
           f"{session} session")
-    print(f"{len(ready)} of {len(methods)} methods fit this session.\n")
+    print(f"{len(plan['ready'])} of {len(methods)} methods fit this session.\n")
 
-    why_a = (f"{path_a['skill']} is your closest skill to 99 with a ready method "
-             f"({path_a['_gap']:,.0f} XP left).") if path_a else ""
-    print_path("PATH A: finish something", path_a, why_a, account, hours)
-    print_path("PATH B: max XP", path_b,
-               "Highest XP/hr of your ready training methods (judged on the low end of each range).",
-               account, hours)
-    why_c = "Highest gp/hr of your ready money methods."
-    # Warn when the ranking compares before-tax and after-tax figures.
-    tax_bases = {m["gp_after_tax"] for m in ready if m["type"] == "money"}
-    if len(tax_bases) > 1:
-        before = [m["name"] for m in ready if m["type"] == "money" and m["gp_after_tax"] is False]
-        why_c += (" CAUTION: this ranking mixes before-tax and after-tax figures; "
-                  f"after tax, {', '.join(before)} would earn less than shown.")
-    print_path("PATH C: gold", path_c, why_c, account, hours)
+    for title, method, why in plan["paths"]:
+        print_path(title, method, why, account, hours)
 
     print("Ruled out for this session:")
-    for method, reasons in ruled_out:
+    for method, reasons in plan["ruled_out"]:
         print(f"  - {method['name']}: {'; '.join(reasons)}")
 
     if goal is not None:

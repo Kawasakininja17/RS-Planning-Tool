@@ -163,7 +163,9 @@ class AlsoTextTests(unittest.TestCase):
 
 
 class SplitRuledOutTests(unittest.TestCase):
-    def test_finished_or_outgrown_only_are_counted_not_listed(self):
+    def test_finished_or_outgrown_are_counted_not_listed(self):
+        # Any "already 99" or "outgrown" reason is enough: you'll never use that
+        # method, so its other reasons (like a missing quest) don't matter.
         outgrown = "you've outgrown this (Mining 96; this method's rates are for levels 30–40)"
         ruled_out = [
             ({"name": "m1"}, ["already 99"]),
@@ -171,10 +173,11 @@ class SplitRuledOutTests(unittest.TestCase):
             ({"name": "m3"}, ["already 99", outgrown]),
             ({"name": "m4"}, ["needs Mining 90 (you have 62)"]),
             ({"name": "m5"}, ["already 99", "quest not done: Family Crest"]),
+            ({"name": "m6"}, [outgrown, "quest not done: New Foundations"]),
         ]
         blocked, finished = split_ruled_out(ruled_out)
-        self.assertEqual([m["name"] for m, _ in blocked], ["m4", "m5"])
-        self.assertEqual(finished, 3)
+        self.assertEqual([m["name"] for m, _ in blocked], ["m4"])
+        self.assertEqual(finished, 5)
 
     def test_nothing_ruled_out(self):
         self.assertEqual(split_ruled_out([]), ([], 0))

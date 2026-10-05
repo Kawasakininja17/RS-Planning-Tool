@@ -650,8 +650,8 @@ def afk_plan(entry, hours, minutes):
 def ruled_out_panel(plan):
     """
     The methods the planner ruled out for this session, with the checker's own
-    reasons. Methods ruled out only because you've finished the skill or outgrown
-    the method are just counted (split_ruled_out). Folded behind a button; hidden
+    reasons. Methods you've finished the skill for or outgrown are just counted
+    (split_ruled_out). Folded behind a button; hidden
     when nothing was ruled out. (The terminal still prints the full list.)
     """
     ruled_out = plan["ruled_out"]

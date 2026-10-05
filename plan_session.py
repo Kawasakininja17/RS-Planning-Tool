@@ -161,13 +161,14 @@ def also_text(method):
 
 def split_ruled_out(ruled_out):
     """
-    Returns (blocked, finished_count). Methods ruled out ONLY because you've
-    finished the skill ("already 99") or outgrown the method are just counted;
-    everything else (levels too low, quests, your answers, click time) is listed.
+    Returns (blocked, finished_count). Methods you've finished the skill for
+    ("already 99") or outgrown are just counted, whatever other reasons they
+    have: you'll never use them, so a missing quest doesn't matter. Everything
+    else (levels too low, quests, your answers, click time) is listed.
     """
     blocked, finished = [], 0
     for method, reasons in ruled_out:
-        if all(r == "already 99" or r.startswith("you've outgrown this") for r in reasons):
+        if any(r == "already 99" or r.startswith("you've outgrown this") for r in reasons):
             finished += 1
         else:
             blocked.append((method, reasons))

@@ -3,3 +3,4 @@ __pycache__/
 .last_goal
 .venv/
 data/snapshots/
+data/players/

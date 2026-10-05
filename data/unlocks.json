@@ -1,0 +1,69 @@
+{
+  "about": "Big unlocks for the quest path. Each 'unlocks' line was confirmed on the RuneScape Wiki page in source_url on checked_date. final_quest must match the wiki's quest page name.",
+  "unlocks": [
+    {
+      "name": "Prifddinas",
+      "final_quest": "Plague's End",
+      "unlocks": "Access to the city of Prifddinas (quest rewards list), plus 50,000 XP lamps in 10 skills",
+      "why_it_matters": "Corrupted ore for Mining and Smithing, and the crystal hammer, are in Prifddinas",
+      "source_url": "https://runescape.wiki/w/Plague's_End",
+      "checked_date": "2026-10-04"
+    },
+    {
+      "name": "Vibrant energy money method",
+      "final_quest": "The World Wakes",
+      "unlocks": "Listed as a quest requirement for harvesting vibrant energy (4.32M gp/hr)",
+      "why_it_matters": "Your Path C question; it also needs the Divine Conversion relic",
+      "source_url": "https://runescape.wiki/w/Money_making_guide/Harvesting_vibrant_energy",
+      "checked_date": "2026-10-04"
+    },
+    {
+      "name": "Superheat Form and Crystal Mask",
+      "final_quest": "The Light Within",
+      "unlocks": "Superheat Form (elder rune bar guide) and Crystal Mask (skilling money guide)",
+      "why_it_matters": "Faster smelting, and longer AFK pickpocketing",
+      "source_url": "https://runescape.wiki/w/Money_making_guide/Smelting_elder_rune_bars",
+      "checked_date": "2026-10-04"
+    },
+    {
+      "name": "Lletya animica mine",
+      "final_quest": "Regicide",
+      "unlocks": "The Lletya mine (light animica) lists Regicide as its requirement",
+      "why_it_matters": "A third light animica mine for Path A",
+      "source_url": "https://runescape.wiki/w/Light_animica_rock",
+      "checked_date": "2026-10-04"
+    },
+    {
+      "name": "Lunar spells and the astral rift",
+      "final_quest": "Lunar Diplomacy",
+      "unlocks": "The astral rift in the Abyss; also a requirement for crafting decorated urns on the Lunar spellbook (skilling money guide)",
+      "why_it_matters": "Runecrafting through the Abyss, and a 13.85M gp/hr money method (which also needs Plague's End)",
+      "source_url": "https://runescape.wiki/w/Abyss",
+      "checked_date": "2026-10-04"
+    },
+    {
+      "name": "Elder wisps (Elder Halls)",
+      "final_quest": "Fate of the Gods",
+      "unlocks": "Training on elder wisps in the Elder Halls from 75 Divination",
+      "why_it_matters": "A Divination alternative to the Hall of Memories",
+      "source_url": "https://runescape.wiki/w/Divination_training",
+      "checked_date": "2026-10-04"
+    },
+    {
+      "name": "Death rift",
+      "final_quest": "Mourning's End Part II",
+      "unlocks": "The death rift in the Abyss",
+      "why_it_matters": "Also step 7 of the Plague's End chain",
+      "source_url": "https://runescape.wiki/w/Abyss",
+      "checked_date": "2026-10-04"
+    },
+    {
+      "name": "Vyre pickpocketing (Darkmeyer)",
+      "final_quest": "The Branches of Darkmeyer",
+      "unlocks": "Quest requirement for pickpocketing vyrelord and vyrelady consumers (5.03M gp/hr, needs 118 Thieving)",
+      "why_it_matters": "The best low-intensity Thieving money method once you reach 118",
+      "source_url": "https://runescape.wiki/w/Money_making_guide/Skilling",
+      "checked_date": "2026-10-04"
+    }
+  ]
+}

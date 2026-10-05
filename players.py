@@ -10,12 +10,22 @@ Each player gets a folder under data/players/ (kept out of git):
         answers.json   "I have it" / "I don't" answers for unlocks RuneMetrics can't see
         last_goal      the big goal picked last time in the terminal menu
         snapshots/     XP snapshots, one per fetch
+
+data/players/current.txt remembers the player the app showed last.
 """
 
 import json
+import re
+import sys
 from pathlib import Path
 
 PLAYERS_DIR = Path(__file__).parent / "data" / "players"
+
+# Name rules from the RuneScape Wiki "Display name" page: at most 12 characters;
+# letters, numbers, spaces, hyphens and underscores. (New names can't START with
+# - or _, but older names may, so that isn't rejected.)
+MAX_NAME_LENGTH = 12
+NAME_CHARACTERS = re.compile(r"[A-Za-z0-9 _-]+")
 
 
 # ---------------------------------------------------------------------------
@@ -72,3 +82,83 @@ def save_answer(name, unlock_id, has_it):
     folder.mkdir(parents=True, exist_ok=True)
     (folder / "answers.json").write_text(json.dumps(answers, indent=2, sort_keys=True) + "\n",
                                          encoding="utf-8")
+
+
+# ---------------------------------------------------------------------------
+# Checking a typed name (before asking RuneMetrics anything)
+# ---------------------------------------------------------------------------
+
+def check_name(text):
+    """Returns (cleaned name, None) if the name could be real, or (None, problem in plain words)."""
+    name = (text or "").strip()
+    if not name:
+        return None, "Type a RuneScape name first."
+    if len(name) > MAX_NAME_LENGTH:
+        return None, f"RuneScape names are at most {MAX_NAME_LENGTH} characters; that one has {len(name)}."
+    if not NAME_CHARACTERS.fullmatch(name):
+        return None, "RuneScape names only use letters, numbers, spaces, hyphens (-) and underscores (_)."
+    return name, None
+
+
+# ---------------------------------------------------------------------------
+# The current player (the one the app shows)
+# ---------------------------------------------------------------------------
+
+def read_current():
+    """The remembered player's name, or None if none has been chosen yet."""
+    try:
+        name = (PLAYERS_DIR / "current.txt").read_text(encoding="utf-8").strip()
+    except OSError:
+        return None
+    return name or None
+
+
+def save_current(name):
+    PLAYERS_DIR.mkdir(parents=True, exist_ok=True)
+    (PLAYERS_DIR / "current.txt").write_text(name + "\n", encoding="utf-8")
+
+
+def known_players():
+    """
+    Every player with at least one snapshot, A-Z. The name comes from their newest
+    snapshot, so it has RuneMetrics' own capitals. (Snapshot file names start with
+    the date and time, so the newest is the last one alphabetically.)
+    """
+    names = []
+    for snapshots in sorted(PLAYERS_DIR.glob("*/snapshots")):
+        newest = max(snapshots.glob("*.json"), default=None)
+        if newest is None:
+            continue
+        try:
+            names.append(json.loads(newest.read_text(encoding="utf-8"))["username"])
+        except (OSError, json.JSONDecodeError, KeyError, TypeError):
+            continue   # an unreadable snapshot just leaves that player off the list
+    return sorted(names, key=str.lower)
+
+
+# ---------------------------------------------------------------------------
+# Terminal scripts: which player?
+# ---------------------------------------------------------------------------
+
+def cli_player(given=None):
+    """
+    The name typed on the command line if any, otherwise the remembered player,
+    otherwise ask. Stops with a clear message if no valid name can be found.
+    """
+    if given:
+        name, problem = check_name(given)
+        if problem:
+            sys.exit(f"Error: {problem}")
+        return name
+    remembered = read_current()
+    if remembered:
+        return remembered
+    while True:
+        try:
+            text = input("RuneScape name: ")
+        except EOFError:   # no keyboard attached
+            sys.exit('Error: no player chosen. Give a name, e.g. --user "Some Player".')
+        name, problem = check_name(text)
+        if name:
+            return name
+        print(f"  {problem}")

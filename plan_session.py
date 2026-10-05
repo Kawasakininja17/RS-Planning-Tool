@@ -27,9 +27,9 @@ import textwrap   # wraps long notes onto several lines
 
 from account import LEVEL_XP, level_from_xp, read_account, xp_to_99
 from check_methods import load_methods, load_quest_files
-from players import read_answers
+from players import cli_player, read_answers
 from quest_path import choose_goal, print_quest_path
-from rs3_planner import DEFAULT_USERNAME, load_profile, load_quests
+from rs3_planner import load_profile, load_quests
 
 DEFAULT_HOURS = 5
 DEFAULT_MINUTES = 2
@@ -279,12 +279,13 @@ def ask_session_type(default="afk"):
 
 def main():
     parser = argparse.ArgumentParser(description="Pick three AFK paths for one session.")
-    parser.add_argument("--user", default=DEFAULT_USERNAME, help="RuneScape name")
+    parser.add_argument("--user", help="RuneScape name (default: the player you last chose in the app)")
     parser.add_argument("--hours", type=float, help="hours available")
     parser.add_argument("--minutes", type=float, help="most minutes you can go between clicks")
     parser.add_argument("--session", choices=["afk", "active"], help="AFK shows paths A-C; active adds the quest path")
     parser.add_argument("--goal", help="big goal for active sessions: menu number or unlock name")
     args = parser.parse_args()
+    username = cli_player(args.user)
 
     # Ask only for what wasn't given on the command line.
     hours = args.hours if args.hours and args.hours > 0 else ask_number("Hours available", DEFAULT_HOURS)
@@ -293,20 +294,20 @@ def main():
     session = args.session or ask_session_type()
 
     methods = load_methods()   # stops here if methods.json has problems
-    account = read_account(load_profile(args.user), load_quests(args.user))
+    account = read_account(load_profile(username), load_quests(username))
     try:
-        answers = read_answers(args.user)
+        answers = read_answers(username)
     except ValueError as err:
         sys.exit(f"Error: {err}")
 
     goal = None
     if session == "active":
         unlocks, quests = load_quest_files()   # stops here if the quest files have problems
-        goal = choose_goal(unlocks, quests, account, preset=args.goal)
+        goal = choose_goal(unlocks, quests, account, username, preset=args.goal)
 
     plan = build_plan(methods, account, max_minutes, answers)
 
-    print(f"\nSession plan for {args.user}: {hours:g} hours, a click at most every {max_minutes:g} minutes, "
+    print(f"\nSession plan for {username}: {hours:g} hours, a click at most every {max_minutes:g} minutes, "
           f"{session} session")
     print(f"{len(plan['ready'])} of {len(methods)} methods fit this session.\n")
 

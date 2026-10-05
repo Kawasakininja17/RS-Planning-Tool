@@ -13,12 +13,9 @@ tools/fetch_quest_data.py). Your progress and levels come live from RuneMetrics.
 """
 
 import textwrap
-from pathlib import Path
-
 from account import xp_to_level
+from players import player_dir
 from rs3_planner import DIFFICULTY_NAMES
-
-LAST_GOAL_FILE = Path(__file__).parent / ".last_goal"   # remembers your last menu choice
 
 # Quest lengths as the wiki writes them, shortest first.
 LENGTH_ORDER = ["very short", "short", "short to medium", "medium", "medium to long",
@@ -110,21 +107,24 @@ def goal_progress(unlock, quests, account):
 # Choosing the big goal
 # ---------------------------------------------------------------------------
 
-def read_last_goal():
+def read_last_goal(username):
+    """The big goal this player picked last time in the menu, or None."""
     try:
-        return LAST_GOAL_FILE.read_text(encoding="utf-8").strip()
+        return (player_dir(username) / "last_goal").read_text(encoding="utf-8").strip() or None
     except OSError:
         return None
 
 
-def save_last_goal(name):
+def save_last_goal(username, name):
     try:
-        LAST_GOAL_FILE.write_text(name + "\n", encoding="utf-8")
+        folder = player_dir(username)
+        folder.mkdir(parents=True, exist_ok=True)
+        (folder / "last_goal").write_text(name + "\n", encoding="utf-8")
     except OSError:
         pass   # remembering the choice is a convenience, not essential
 
 
-def choose_goal(unlocks, quests, account, preset=None):
+def choose_goal(unlocks, quests, account, username, preset=None):
     """
     Pick the big goal. `preset` (from --goal) can be a menu number or an unlock name.
     Otherwise show a menu; Enter keeps the last choice.
@@ -138,7 +138,7 @@ def choose_goal(unlocks, quests, account, preset=None):
                 return unlock
         print(f"  '{preset}' isn't one of the unlocks; showing the menu instead.")
 
-    last = read_last_goal()
+    last = read_last_goal(username)
     default = names.index(last) + 1 if last in names else 1
 
     print("\nBig goals:")
@@ -160,7 +160,7 @@ def choose_goal(unlocks, quests, account, preset=None):
             choice = int(answer)
             break
         print(f"  Please type a number from 1 to {len(unlocks)}.")
-    save_last_goal(unlocks[choice - 1]["name"])
+    save_last_goal(username, unlocks[choice - 1]["name"])
     return unlocks[choice - 1]
 
 

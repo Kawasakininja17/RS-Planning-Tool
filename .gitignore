@@ -1,6 +1,4 @@
 __pycache__/
 *.pyc
-.last_goal
 .venv/
-data/snapshots/
 data/players/

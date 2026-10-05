@@ -11,7 +11,7 @@ Only standard Python is used, so nothing needs to be installed.
 This script only READS public web pages. It never touches the game client.
 
 How to run:
-    python3 rs3_planner.py                    (uses the default name)
+    python3 rs3_planner.py                    (the player you last chose in the app, or it asks)
     python3 rs3_planner.py "Some Player"      (any other name, in quotes)
 """
 
@@ -21,11 +21,11 @@ import urllib.error     # the kinds of errors a web request can raise
 import urllib.parse     # makes names safe to put in a web address
 import urllib.request   # downloads web pages
 
+from players import cli_player   # which player: typed name, remembered player, or ask
+
 # ---------------------------------------------------------------------------
 # Settings and fixed game facts
 # ---------------------------------------------------------------------------
-
-DEFAULT_USERNAME = "Hels Glasglo"
 
 PROFILE_URL = "https://apps.runescape.com/runemetrics/profile/profile?user={name}&activities=20"
 QUESTS_URL = "https://apps.runescape.com/runemetrics/quests?user={name}"
@@ -225,9 +225,9 @@ def load_quests(username):
 # ---------------------------------------------------------------------------
 
 def main():
-    # Use the name typed after the script, or the default if none was given.
+    # The name typed after the script, or the remembered player, or ask.
     # Joining the pieces lets "python3 rs3_planner.py Hels Glasglo" work without quotes too.
-    username = " ".join(sys.argv[1:]).strip() or DEFAULT_USERNAME
+    username = cli_player(" ".join(sys.argv[1:]).strip() or None)
 
     print(f"RuneMetrics planner for: {username}\n")
 

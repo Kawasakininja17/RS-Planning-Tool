@@ -29,10 +29,10 @@ from nicegui import app, run, ui
 from account import LEVEL_XP, read_account
 from check_methods import load_methods, load_quest_files
 from plan_session import build_plan, path_lines
-from players import read_answers
+from players import read_answers, read_current
 from quest_path import difficulty_name, goal_progress, ranked_doable, skill_gaps, unlock_count
 from rs3_planner import (
-    DEFAULT_USERNAME, INVENTION_ID, SKILL_NAMES, XP_FOR_99_ELITE, XP_FOR_99_NORMAL,
+    INVENTION_ID, SKILL_NAMES, XP_FOR_99_ELITE, XP_FOR_99_NORMAL,
     load_profile, load_quests, xp_needed_for_99,
 )
 from snapshots import save_snapshot
@@ -40,7 +40,7 @@ from snapshots import save_snapshot
 HERE = Path(__file__).parent
 HOST = "127.0.0.1"   # this computer only - never 0.0.0.0
 PORT = 8080
-USERNAME = DEFAULT_USERNAME
+USERNAME = read_current()   # temporary until the player screen arrives
 BIG_GOAL_QUEST = "Plague's End"
 NO_VALUE = "—"       # shown when a value is missing; never a made-up number
 

@@ -5,17 +5,16 @@ RS3 Planner - XP snapshots
 Every fetch from RuneMetrics saves a small record of your XP, so a later
 Progress screen can chart how it changes over time.
 
-Files go to data/snapshots/YYYY-MM-DD_HHMM.json (two fetches in the same
-minute share one file; the later one wins). Snapshots stay out of git.
+Files go to data/players/<player>/snapshots/YYYY-MM-DD_HHMM.json (see
+players.py). Two fetches in the same minute share one file; the later one
+wins. Snapshots stay out of git.
 """
 
 import datetime
 import json
-from pathlib import Path
 
+from players import player_dir
 from rs3_planner import SKILL_NAMES
-
-SNAPSHOT_DIR = Path(__file__).parent / "data" / "snapshots"
 
 
 def save_snapshot(username, profile, when=None):
@@ -33,7 +32,8 @@ def save_snapshot(username, profile, when=None):
         "total_xp": profile["totalxp"],
         "skills": skills,
     }
-    SNAPSHOT_DIR.mkdir(parents=True, exist_ok=True)
-    path = SNAPSHOT_DIR / f"{when:%Y-%m-%d_%H%M}.json"
+    folder = player_dir(username) / "snapshots"
+    folder.mkdir(parents=True, exist_ok=True)
+    path = folder / f"{when:%Y-%m-%d_%H%M}.json"
     path.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
     return path

@@ -1,55 +1,141 @@
 # RS3 Planner
 
-A small personal planning tool for RuneScape 3. It reads a player's **public**
-RuneMetrics data and shows:
+A small planning tool for RuneScape 3 that runs on your own computer and opens
+in your web browser. Give it a public RuneScape name and it shows:
 
-- How much XP each skill still needs to reach 99, smallest gap first, plus the total.
-- Quests the player can start right now (eligible but not yet started), with difficulty.
+- **What to do with tonight's session:** three AFK paths (finish a skill, most
+  XP, most gold) with two "also good" alternatives each, or an active plan with
+  tonight's quest.
+- **Skills:** all 29 skills with level, XP and XP left to 99, closest first.
+- **Quests:** a big goal (like Prifddinas) with its whole quest chain, the
+  skills you're still short, and the quests you can start right now.
 
-It only reads public web pages. It never touches or controls the game client.
+It only reads public data (RuneMetrics and the RuneScape Wiki). It never
+touches or controls the game client, and it never asks for a password.
 
 Plans assume a regular account. Ironman accounts aren't supported yet. Plans
 may suggest training or money methods an ironman can't use.
 
-## Requirements
+## Install
 
-- Python 3 (already included on most Linux systems).
-- An internet connection.
-- The terminal scripts need nothing else. The browser app needs NiceGUI,
-  installed into a virtual environment (below).
+### You'll need
 
-## Browser app
+- **Python 3.10 or newer.** Most Linux systems already have it; on a Mac or
+  Windows, get it from [python.org](https://www.python.org/downloads/).
+- **An internet connection** (to read RuneMetrics and to install the app's one helper, NiceGUI).
+- Built and tested on Linux with Python 3.14.
 
-A phone-friendly page with Home, Ready to play, your plan, **Skills** (all 29
-skills with level, XP and XP left to 99, closest first, with finished skills at
-the bottom) and **Quests** (your big goal: tonight's quest, the skills still short,
-the whole quest chain with statuses, the quests you can start now and the ones in progress).
+### 1. Get the code
 
-**One-time setup** (creates `.venv/`, the project's private Python toolbox,
-and installs NiceGUI into it, not into your system):
+Either use git:
 
 ```bash
-python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+git clone https://github.com/Kawasakininja17/RS-Planning-Tool.git
 ```
 
-**Start it** (from this folder):
+```bash
+cd RS-Planning-Tool
+```
+
+or, on the GitHub page, press the green **Code** button, then **Download ZIP**,
+unzip it, and open a terminal in the unzipped folder.
+
+### 2. One-time setup
+
+This creates `.venv/`, the project's own private Python toolbox, and installs
+NiceGUI into it (not into your system).
+
+**Linux and Mac:**
+
+```bash
+python3 -m venv .venv
+```
+
+```bash
+.venv/bin/pip install -r requirements.txt
+```
+
+**Windows (not tested yet):**
+
+```bash
+py -m venv .venv
+```
+
+```bash
+.venv\Scripts\pip install -r requirements.txt
+```
+
+### 3. Start it
+
+From the project folder:
+
+**Linux and Mac:**
 
 ```bash
 .venv/bin/python app.py
 ```
 
-Then open **http://127.0.0.1:8080** in your browser. Stop it with Ctrl+C in the terminal.
+**Windows (not tested yet):**
 
-**Choosing a player:** the first time, the app asks for a RuneScape name. Only the
-public RuneMetrics name is needed: never enter a password. Press **Switch player**
-on Home to look up someone else; players you've looked up before are one tap away.
+```bash
+.venv\Scripts\python app.py
+```
 
-- It only listens on this computer (127.0.0.1), so other devices on your network can't reach it.
-- It fetches each player from RuneMetrics once while it runs, and again only when you press **Refresh**.
-- Every fetch saves a snapshot to `data/players/<player>/snapshots/` (kept out of git) for a future Progress screen.
-- Fonts (Uncial Antiqua, Cinzel, Alegreya; SIL Open Font License) and icons (Lucide; ISC licence)
-  are bundled in `static/`, with their licences, so it works offline.
-- All numbers come from the same code as the terminal scripts.
+Then open **http://127.0.0.1:8080** in your browser. To stop the app, press
+**Ctrl+C** in the terminal; it says "RS3 Planner stopped."
+
+### Updating later
+
+If you used git, get the newest version with `git pull` in the project folder,
+then run the setup's `pip install` line again (in case NiceGUI's version changed).
+With a ZIP, download it again.
+
+## Using the app
+
+1. **Choose player.** The first time, type a RuneScape name and press **Look up**.
+   Only the public RuneMetrics name is needed: never enter a password. The
+   player's RuneMetrics profile must be public. Players you've looked up before
+   appear under **Recent players**, one tap away.
+2. **Home** shows max cape progress, the skills closest to 99, and your big goal.
+   **Refresh** fetches fresh stats; **Switch player** goes back to step 1.
+3. **Ready to play:** pick how long you can play, **AFK** or **Active**, and (for
+   AFK) the most time you can go between clicks. Press **Show my plan**.
+4. **Your plan (AFK)** gives three paths:
+   - **A · Finish something:** your skill closest to 99 that has a method you can do now
+   - **B · Max XP:** the most XP per hour
+   - **C · Gold:** the most gp per hour
+
+   Each shows the rate, what the hours get you, and **Also good:** the next two
+   best options. Some methods need things RuneMetrics can't see (like a smithing
+   autoheater); the plan asks **I have it** / **I don't**, remembers your answer,
+   and lets you change it under **Your answers**. **Why not the others?** explains
+   every method that was ruled out.
+5. **Your plan (Active)** shows tonight's quest, the next one on the way, and the
+   skills still short for your big goal.
+6. **Skills** (bottom bar): every skill with level, XP and XP left to 99.
+7. **Quests** (bottom bar): your big goal's quest chain with the status of each
+   quest, other requirements to check yourself, the quests you can start now
+   (**Show all** for the full list) and the ones in progress. **Change goal**
+   picks a different big goal.
+
+**Good to know**
+
+- The app only listens on your own computer (127.0.0.1), so other devices on your
+  network can't reach it. One person per copy.
+- Each player is fetched from RuneMetrics once while the app runs, and again only
+  when you press **Refresh**.
+- Your answers, chosen goal and stat snapshots stay on your computer, in
+  `data/players/<player>/` (never uploaded; kept out of git). Snapshots are kept
+  for a future Progress screen.
+- Fonts (Uncial Antiqua, Cinzel, Alegreya; SIL Open Font License) and icons
+  (Lucide; ISC licence) are bundled in `static/`, with their licences.
+
+---
+
+# For tinkerers: terminal scripts, data files and tests
+
+Everything the app shows comes from the same code as these terminal scripts.
+Commands below are for Linux and Mac, run from the project folder.
 
 ## How to run the terminal version
 
@@ -96,6 +182,9 @@ whether the session is AFK (1) or active (2). You can also give the answers up f
 
 ```bash
 python3 plan_session.py --hours 5 --minutes 2 --session afk
+```
+
+```bash
 python3 plan_session.py --user "Some Player"
 ```
 

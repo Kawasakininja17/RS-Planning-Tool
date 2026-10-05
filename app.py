@@ -39,7 +39,7 @@ from player_cache import entry_for, fetch_safely, needs_fetch, record_failure, r
 from players import (
     check_name, folder_name, known_players, read_answers, read_current, save_answer, save_current,
 )
-from quest_path import difficulty_name, goal_progress, ranked_doable, skill_gaps, unlock_count
+from quest_path import difficulty_name, goal_for, goal_progress, ranked_doable, skill_gaps, unlock_count
 from rs3_planner import (
     INVENTION_ID, SKILL_NAMES, XP_FOR_99_ELITE, XP_FOR_99_NORMAL, xp_needed_for_99,
 )
@@ -48,7 +48,6 @@ from snapshots import save_snapshot
 HERE = Path(__file__).parent
 HOST = "127.0.0.1"   # this computer only - never 0.0.0.0
 PORT = 8080
-BIG_GOAL_QUEST = "Plague's End"
 NO_VALUE = "—"       # shown when a value is missing; never a made-up number
 
 HOUR_CHOICES = [1, 2, 3, 5, 8]
@@ -63,7 +62,6 @@ PATH_NAMES = [("A", "Finish something"), ("B", "Max XP"), ("C", "Gold")]
 # prints what's wrong and the app stops, just like the terminal version.
 METHODS = load_methods()
 UNLOCKS, QUESTS = load_quest_files()
-GOAL = next(u for u in UNLOCKS if u["final_quest"] == BIG_GOAL_QUEST)
 
 PASSWORD_NOTE = "Only your public RuneMetrics name. Never enter a password."
 IRONMAN_NOTE = ("Ironman accounts aren't supported yet. Plans may suggest training or "
@@ -115,6 +113,13 @@ def current_entry():
     return entry_for(CACHE, name)
 
 
+def current_goal():
+    """The current player's big goal: their saved choice (shared with the terminal's
+    menu), else the first unlock. Read fresh each time, so a change made in the
+    terminal shows on the next page load."""
+    return goal_for(UNLOCKS, CURRENT["name"])
+
+
 async def fetch_current_on_startup():
     if CURRENT["name"]:
         await fetch_player(CURRENT["name"])
@@ -145,13 +150,17 @@ def max_cape_numbers(profile):
     }
 
 
-def big_goal_numbers(account):
-    chain, done = goal_progress(GOAL, QUESTS, account)
-    required = QUESTS[BIG_GOAL_QUEST]["skill_requirements"]
-    below = [s for s, level in required.items() if account["skills"][s]["level"] < level]
-    levels = set(required.values())
-    return {"chain": len(chain), "done": done, "below": len(below), "required": len(required),
-            "level": levels.pop() if len(levels) == 1 else None}
+def big_goal_numbers(goal, account):
+    """Progress on a big goal: quests done in its chain, and skills short anywhere in it."""
+    chain, done = goal_progress(goal, QUESTS, account)
+    return {"chain": len(chain), "done": done, "short": len(skill_gaps(chain, QUESTS, account))}
+
+
+def skills_short(count):
+    """'no skills short', '1 skill short' or '4 skills short'."""
+    if count == 0:
+        return "no skills short"
+    return f"{count} skill short" if count == 1 else f"{count} skills short"
 
 
 # ---------------------------------------------------------------------------
@@ -272,14 +281,16 @@ def home_page():
                     ui.label(f"{xp_left:,.0f} XP left").classes("muted")
                 bar(skill["xp"] / target, thin=True)
 
-        # Big goal
-        goal = big_goal_numbers(account)
+        # Big goal (the one chosen on the Quests screen)
+        goal = current_goal()
+        numbers = big_goal_numbers(goal, account)
         with panel():
             ui.label("Big goal").classes("label")
-            ui.label(BIG_GOAL_QUEST).classes("subtitle")
-            ui.label(f"{goal['done']} of {goal['chain']} quests done in its chain").classes("muted")
-            level_text = f"below {goal['level']}" if goal["level"] else "below their required level"
-            ui.label(f"{goal['below']} of {goal['required']} required skills {level_text}").classes("muted")
+            ui.label(goal["name"]).classes("subtitle")
+            ui.label(f"via {goal['final_quest']}").classes("muted")
+            ui.label(f"{numbers['done']} of {numbers['chain']} quests done in its chain").classes("muted")
+            short = skills_short(numbers["short"]) + " for its chain"
+            ui.label(short[0].upper() + short[1:]).classes("muted")
 
         with button(on_click=lambda: ui.navigate.to("/play")).props("unelevated no-caps").classes("btn-crimson"):
             with ui.row().classes("items-center gap-3"):
@@ -485,10 +496,16 @@ def your_answers(name, answers):
 
 
 def active_plan(account, hours):
+    goal = current_goal()
     ui.label("Your active plan").classes("title")
-    ui.label(f"{hours:g} hours · big goal: {GOAL['name']} ({BIG_GOAL_QUEST})").classes("muted")
+    ui.label(f"{hours:g} hours · big goal: {goal['name']} ({goal['final_quest']})").classes("muted")
+    tonight_panels(goal, account)
+    skills_short_panel(goal, account, f"Skills still short for {goal['final_quest']}")
 
-    titles, on_path = ranked_doable(GOAL, UNLOCKS, QUESTS, account)   # same ranking as the terminal
+
+def tonight_panels(goal, account):
+    """Tonight's quest and the next one on the way (Active plan and Quests screen)."""
+    titles, on_path = ranked_doable(goal, UNLOCKS, QUESTS, account)   # same ranking as the terminal
 
     with panel(crimson=True):
         ui.label("Tonight's quest").classes("label")
@@ -509,10 +526,13 @@ def active_plan(account, hours):
             ui.label(also).classes("heading")
             ui.label(f"{difficulty_name(also, account)} · {QUESTS[also]['length']}").classes("muted")
 
-    chain, _ = goal_progress(GOAL, QUESTS, account)
+
+def skills_short_panel(goal, account, title):
+    """Skill levels still needed anywhere in the goal's chain, smallest gap first."""
+    chain, _ = goal_progress(goal, QUESTS, account)
     gaps = skill_gaps(chain, QUESTS, account)
     with panel():
-        ui.label(f"Skills still short for {BIG_GOAL_QUEST}").classes("label")
+        ui.label(title).classes("label")
         if not gaps:
             ui.label("None - your levels already cover the whole chain.").classes("muted")
         for skill, (level, have, xp_left, _) in gaps.items():

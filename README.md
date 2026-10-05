@@ -8,6 +8,9 @@ RuneMetrics data and shows:
 
 It only reads public web pages. It never touches or controls the game client.
 
+Plans assume a regular account. Ironman accounts aren't supported yet. Plans
+may suggest training or money methods an ironman can't use.
+
 ## Requirements
 
 - Python 3 (already included on most Linux systems).
@@ -34,9 +37,13 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 
 Then open **http://127.0.0.1:8080** in your browser. Stop it with Ctrl+C in the terminal.
 
+**Choosing a player:** the first time, the app asks for a RuneScape name. Only the
+public RuneMetrics name is needed: never enter a password. Press **Switch player**
+on Home to look up someone else; players you've looked up before are one tap away.
+
 - It only listens on this computer (127.0.0.1), so other devices on your network can't reach it.
-- It fetches RuneMetrics once when it starts, and again only when you press **Refresh**.
-- Every fetch saves a snapshot to `data/snapshots/` (kept out of git) for a future Progress screen.
+- It fetches each player from RuneMetrics once while it runs, and again only when you press **Refresh**.
+- Every fetch saves a snapshot to `data/players/<player>/snapshots/` (kept out of git) for a future Progress screen.
 - Fonts (Uncial Antiqua, Cinzel, Alegreya; SIL Open Font License) and icons (Lucide; ISC licence)
   are bundled in `static/`, with their licences, so it works offline.
 - All numbers come from the same code as the terminal scripts.
@@ -49,8 +56,8 @@ Open a terminal in this folder, then:
 python3 rs3_planner.py
 ```
 
-That uses the default player, **Hels Glasglo**. To look up someone else, put
-the name after the script, in quotes:
+That uses the player you last chose in the app (or asks for a name). To look
+up someone else, put the name after the script, in quotes:
 
 ```bash
 python3 rs3_planner.py "Some Player"
@@ -81,6 +88,7 @@ whether the session is AFK (1) or active (2). You can also give the answers up f
 
 ```bash
 python3 plan_session.py --hours 5 --minutes 2 --session afk
+python3 plan_session.py --user "Some Player"
 ```
 
 It reads your live account, keeps only the methods you can do right now,
@@ -93,8 +101,11 @@ and suggests three paths:
 Methods whose click time the wiki doesn't give are kept, but marked
 "click time unknown". Everything ruled out is listed at the end with the reason.
 
-When you unlock something listed under `missing` in `data/methods.json`,
-delete that line. Levels and quests are checked automatically.
+Some methods need things RuneMetrics can't see, like a smithing autoheater. The
+plan shows "Check: needs …" with **I have it** / **I don't**; your answers are saved
+in `data/players/<player>/answers.json` (kept out of git) and can be changed under
+**Your answers**. "I don't" rules the method out. Levels and quests are checked
+automatically.
 
 A `^` after a gp figure in `check_methods.py` means the wiki only gives it
 before Grand Exchange tax; the planner warns when it compares such a figure
@@ -103,7 +114,8 @@ with after-tax ones.
 ## The quest path (active sessions)
 
 An active session first shows a menu of big goals (from `data/unlocks.json`)
-with your progress on each. Type a number; Enter keeps your last choice.
+with your progress on each. Type a number; Enter keeps your last choice
+(remembered per player).
 You can also pick it up front: `--goal 1` or `--goal "Prifddinas"`.
 
 For the chosen goal it shows the full quest chain (prerequisites first) with
@@ -126,6 +138,15 @@ python3 check_methods.py
 
 checks all three data files (methods, unlocks, quests) and stops with a clear
 list of problems if anything is broken. Run it after every edit.
+
+## Tests
+
+```bash
+python3 -m unittest discover -s tests -v
+```
+
+Runs the automatic checks (standard Python, nothing to install). They never use
+the internet or your real player files.
 
 ## Good to know
 

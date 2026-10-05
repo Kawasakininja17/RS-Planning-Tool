@@ -628,7 +628,7 @@ def afk_plan(entry, hours, minutes):
         with panel():
             ui.label(f"{letter} · {path_name}").classes("label")
             if method is None:
-                ui.label("Nothing in the methods file fits this session.").classes("muted")
+                ui.label("Nothing ready for this path: see why below.").classes("muted")
                 continue
             ui.label(method["name"]).classes("heading")
             ui.label(method["skill"]).classes("muted small")
@@ -642,6 +642,37 @@ def afk_plan(entry, hours, minutes):
                 unlock_question(name, unlock)
 
     your_answers(name, answers)
+    ruled_out_panel(plan)
+
+
+def ruled_out_panel(plan):
+    """
+    Every method the planner ruled out for this session, with the checker's own
+    reasons (the list the terminal prints). Folded behind a button; hidden when
+    nothing was ruled out.
+    """
+    ruled_out = plan["ruled_out"]
+    if not ruled_out:
+        return
+    with panel():
+        show_text = f"Why not the others? ({len(ruled_out)} ruled out)"
+        toggle = button(show_text).props("unelevated no-caps").classes("btn-quiet")
+        # Drawn now but hidden; the button shows or hides it (nothing is fetched).
+        reasons_list = ui.column().classes("w-full gap-2")
+        with reasons_list:
+            for method, reasons in ruled_out:
+                with ui.column().classes("gap-0"):
+                    ui.label(method["name"]).classes("heading")
+                    ui.label(method["skill"]).classes("muted small")
+                    ui.label("; ".join(reasons)).classes("muted small")
+        reasons_list.set_visibility(False)
+
+        def flip():
+            showing = not reasons_list.visible
+            reasons_list.set_visibility(showing)
+            toggle.set_text("Hide the list" if showing else show_text)
+
+        toggle.on_click(flip)
 
 
 def answer_and_redraw(name, unlock_id, has_it):

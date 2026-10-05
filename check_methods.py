@@ -18,6 +18,7 @@ so a mistake in the file can't slip through quietly.
 
 import datetime   # to check that dates are real dates
 import json       # to read the methods file
+import re         # to check the shape of unlock ids
 import sys        # to exit with an error code when problems are found
 from pathlib import Path   # to find the data file next to this script
 
@@ -33,7 +34,7 @@ QUESTS_FILE = DATA_DIR / "quests.json"
 REQUIRED_FIELDS = [
     "type", "name", "skill", "min_level",
     "xp_per_hour_low", "xp_per_hour_high", "gp_per_hour", "gp_after_tax",
-    "minutes_between_clicks", "requirements", "missing", "unverified",
+    "minutes_between_clicks", "requirements", "unverified",
     "source_url", "checked_date", "notes",
 ]
 
@@ -124,17 +125,19 @@ def check_method(method, position):
     if minutes is not None and (not is_number(minutes) or minutes <= 0):
         problems.append(f"{label}: minutes_between_clicks must be a positive number or null")
 
-    # 7. Requirements and the two "what's missing" lists.
+    # 7. Requirements. "skills" are extra levels the planner checks live;
+    #    "unlocks" are things RuneMetrics can't see, which each player answers.
     reqs = method["requirements"]
-    if not isinstance(reqs, dict) or set(reqs) != {"quests", "other"}:
-        problems.append(f"{label}: requirements must have exactly 'quests' and 'other'")
+    if not isinstance(reqs, dict) or set(reqs) != {"quests", "other", "skills", "unlocks"}:
+        problems.append(f"{label}: requirements must have exactly 'quests', 'other', 'skills' and 'unlocks'")
     else:
         for key in ("quests", "other"):
             if not is_list_of_text(reqs[key]):
                 problems.append(f"{label}: requirements.{key} must be a list of text")
-    for key in ("missing", "unverified"):
-        if not is_list_of_text(method[key]):
-            problems.append(f"{label}: {key} must be a list of text")
+        problems.extend(check_skill_levels(reqs["skills"], f"{label}: requirements.skills"))
+        problems.extend(check_unlock_list(reqs["unlocks"], label))
+    if not is_list_of_text(method["unverified"]):
+        problems.append(f"{label}: unverified must be a list of text")
 
     # 8. Source and date.
     problems.extend(check_source_and_date(method, label))
@@ -159,6 +162,59 @@ def check_fields(entry, required, label):
     """Report missing and unexpected fields."""
     problems = [f"{label}: missing field '{f}'" for f in required if f not in entry]
     problems += [f"{label}: unknown field '{f}' (typo?)" for f in entry if f not in required]
+    return problems
+
+
+def check_skill_levels(skills, label):
+    """A {skill: level} block: real skill names, whole-number levels from 1 to 120."""
+    if not isinstance(skills, dict):
+        return [f"{label} must be {{skill: level}}"]
+    problems = []
+    for skill, level in skills.items():
+        if skill not in SKILL_NAMES:
+            problems.append(f"{label}: unknown skill '{skill}'")
+        if not is_whole_number(level) or not 1 <= level <= 120:
+            problems.append(f"{label}: {skill} level must be a whole number from 1 to 120")
+    return problems
+
+
+# Unlock ids: lower-case words joined by hyphens, e.g. "smithing-autoheater".
+UNLOCK_ID = re.compile(r"[a-z0-9]+(-[a-z0-9]+)*")
+
+
+def check_unlock_list(unlocks, label):
+    """requirements.unlocks: [{"id": "smithing-autoheater", "text": "..."}], each id once."""
+    if not isinstance(unlocks, list):
+        return [f"{label}: requirements.unlocks must be a list"]
+    problems, seen = [], set()
+    for position, unlock in enumerate(unlocks, start=1):
+        where = f"{label}: unlock #{position}"
+        if not isinstance(unlock, dict) or set(unlock) != {"id", "text"}:
+            problems.append(f"{where} must have exactly 'id' and 'text'")
+            continue
+        if not isinstance(unlock["id"], str) or not UNLOCK_ID.fullmatch(unlock["id"]):
+            problems.append(f"{where}: id must be lower-case words joined by hyphens, like 'smithing-autoheater'")
+        elif unlock["id"] in seen:
+            problems.append(f"{where}: id '{unlock['id']}' is listed twice")
+        else:
+            seen.add(unlock["id"])
+        if not isinstance(unlock["text"], str) or not unlock["text"].strip():
+            problems.append(f"{where}: text must be non-empty text")
+    return problems
+
+
+def check_unlock_ids_match(methods):
+    """One answer covers every method with that unlock id, so the id must mean the same everywhere."""
+    problems, texts = [], {}
+    for method in methods:
+        reqs = method.get("requirements") if isinstance(method, dict) else None
+        unlocks = reqs.get("unlocks") if isinstance(reqs, dict) else None
+        for unlock in unlocks if isinstance(unlocks, list) else []:
+            if not (isinstance(unlock, dict) and isinstance(unlock.get("id"), str)
+                    and isinstance(unlock.get("text"), str)):
+                continue   # check_unlock_list already reports these
+            if texts.setdefault(unlock["id"], unlock["text"]) != unlock["text"]:
+                problems.append(f"Unlock id '{unlock['id']}' has different text in different methods")
     return problems
 
 
@@ -281,13 +337,15 @@ def print_table(methods):
         if m["gp_after_tax"] is False:
             gp += "^"   # marks a before-tax figure
         click = f"{m['minutes_between_clicks']:g}m" if m["minutes_between_clicks"] is not None else "?"
-        ready = "ok" if not m["missing"] else f"NO ({len(m['missing'])} missing)"
-        if ready == "ok" and m["unverified"]:
-            ready = "ok*"
+        unlocks = m["requirements"]["unlocks"]
+        ready = "ok" if not unlocks else f"{len(unlocks)} to confirm"
+        if m["unverified"]:
+            ready += "*"
         print(f"{m['type']:<9}{name:<43}{m['skill']:<15}{m['min_level']:>4}  {xp_text(m):>10}  {gp:>7}  {click:>5}  {ready}")
     print()
-    print("Click: '?' = the wiki doesn't say.   Unlocks: checks the 'missing' list only; ok* = also relies on")
-    print("something public data can't confirm. Levels and quests are checked live by plan_session.py.")
+    print("Click: '?' = the wiki doesn't say.   Unlocks: how many things each player confirms in the app")
+    print("(RuneMetrics can't see them); * = the rate also assumes something public data can't confirm.")
+    print("Levels and quests are checked live by plan_session.py.")
     print("GP/hr: ^ = the wiki's figure is before Grand Exchange tax; the others are after tax.")
 
 
@@ -302,10 +360,15 @@ def print_gaps(methods):
         if nulls:
             print(f"  - {m['name']}: {', '.join(nulls)}")
 
-    print("\nMissing for you right now:")
+    print("\nExtra levels needed (checked live for each player):")
     for m in methods:
-        for item in m["missing"]:
-            print(f"  - {m['name']}: {item}")
+        for skill, level in m["requirements"]["skills"].items():
+            print(f"  - {m['name']}: {skill} {level}")
+
+    print("\nUnlocks each player confirms for themselves:")
+    for m in methods:
+        for unlock in m["requirements"]["unlocks"]:
+            print(f"  - {m['name']}: {unlock['text']}")
 
     print("\nCan't be confirmed from public data:")
     for m in methods:
@@ -361,6 +424,7 @@ def load_methods():
     names = [m.get("name") for m in methods if isinstance(m, dict)]
     for name in sorted({n for n in names if names.count(n) > 1}):
         problems.append(f"Duplicate method name: {name}")
+    problems.extend(check_unlock_ids_match(methods))
 
     stop_if_problems(problems, METHODS_FILE)
     return methods

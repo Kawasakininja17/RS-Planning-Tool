@@ -22,10 +22,12 @@ How to run (from the project folder):
 """
 
 import argparse   # reads options like --hours 5 from the command line
+import sys        # stops with a clear message if the answers file is broken
 import textwrap   # wraps long notes onto several lines
 
 from account import LEVEL_XP, level_from_xp, read_account, xp_to_99
 from check_methods import load_methods, load_quest_files
+from players import read_answers
 from quest_path import choose_goal, print_quest_path
 from rs3_planner import DEFAULT_USERNAME, load_profile, load_quests
 
@@ -37,12 +39,14 @@ DEFAULT_MINUTES = 2
 # Filtering: can you do this method right now?
 # ---------------------------------------------------------------------------
 
-def check_method_for_session(method, account, max_minutes):
+def check_method_for_session(method, account, max_minutes, answers):
     """
-    Returns (blocked_reasons, warnings).
+    Returns (blocked_reasons, warnings, unanswered).
     No blocked reasons = you can do it now. Warnings are worth knowing but don't block.
+    unanswered = unlocks RuneMetrics can't see that the player hasn't said yes or no to.
+    answers = {unlock id: True/False} from players.read_answers().
     """
-    blocked, warnings = [], []
+    blocked, warnings, unanswered = [], [], []
     skills = method["skill"].split("/")
 
     # Levels, checked live against your XP.
@@ -50,14 +54,24 @@ def check_method_for_session(method, account, max_minutes):
         level = account["skills"][skill]["level"]
         if level < method["min_level"]:
             blocked.append(f"needs {skill} {method['min_level']} (you have {level})")
+    # Extra levels some methods need beyond min_level (e.g. 99 Mining for a mining cape).
+    for skill, level in method["requirements"]["skills"].items():
+        have = account["skills"][skill]["level"]
+        if have < level:
+            blocked.append(f"needs {skill} {level} (you have {have})")
 
     # Quests, checked live against RuneMetrics.
     for quest in method["requirements"]["quests"]:
         if quest not in account["completed_quests"]:
             blocked.append(f"quest not done: {quest}")
 
-    # Unlocks you told us you don't have (kept by hand in methods.json).
-    blocked.extend(method["missing"])
+    # Unlocks RuneMetrics can't see: the player's own answers decide.
+    for unlock in method["requirements"]["unlocks"]:
+        answer = answers.get(unlock["id"])
+        if answer is False:
+            blocked.append(f"you said you don't have: {unlock['text']}")
+        elif answer is None:
+            unanswered.append(unlock)
 
     # Click time. A known time shorter than your limit means too much clicking.
     minutes = method["minutes_between_clicks"]
@@ -73,7 +87,7 @@ def check_method_for_session(method, account, max_minutes):
     if method["gp_after_tax"] is False:
         warnings.append("gp figure is BEFORE Grand Exchange tax (the wiki gives no after-tax figure)")
     warnings.extend(f"assumes: {item}" for item in method["unverified"])
-    return blocked, warnings
+    return blocked, warnings, unanswered
 
 
 # ---------------------------------------------------------------------------
@@ -105,16 +119,18 @@ def pick_paths(ready):
     return path_a, path_b, path_c
 
 
-def build_plan(methods, account, max_minutes):
+def build_plan(methods, account, max_minutes, answers):
     """
     Sort every method into "ready" or "ruled out", then pick paths A, B and C
     with a one-line reason each. Used by main() here and by the browser app (app.py).
+    answers = {unlock id: True/False} from players.read_answers().
     Returns {"ready": [...], "ruled_out": [(method, reasons)], "paths": [(title, method, why)]}.
     """
     ready, ruled_out = [], []
     for method in methods:
-        blocked, warnings = check_method_for_session(method, account, max_minutes)
+        blocked, warnings, unanswered = check_method_for_session(method, account, max_minutes, answers)
         method["_warnings"] = warnings
+        method["_unanswered"] = unanswered
         if blocked:
             ruled_out.append((method, blocked))
         else:
@@ -213,6 +229,8 @@ def print_path(title, method, why, account, hours):
     print(f"  Why:     {why}")
     for warning in method["_warnings"]:
         print(f"  Watch:   {warning}")
+    for unlock in method["_unanswered"]:
+        print(f"  Check:   needs {unlock['text']} (not answered yet; answer in the browser app)")
     # The notes hold the caveats behind the numbers, so always show them.
     print(textwrap.fill(method["notes"], width=100,
                         initial_indent="  Notes:   ", subsequent_indent=" " * 11))
@@ -276,13 +294,17 @@ def main():
 
     methods = load_methods()   # stops here if methods.json has problems
     account = read_account(load_profile(args.user), load_quests(args.user))
+    try:
+        answers = read_answers(args.user)
+    except ValueError as err:
+        sys.exit(f"Error: {err}")
 
     goal = None
     if session == "active":
         unlocks, quests = load_quest_files()   # stops here if the quest files have problems
         goal = choose_goal(unlocks, quests, account, preset=args.goal)
 
-    plan = build_plan(methods, account, max_minutes)
+    plan = build_plan(methods, account, max_minutes, answers)
 
     print(f"\nSession plan for {args.user}: {hours:g} hours, a click at most every {max_minutes:g} minutes, "
           f"{session} session")

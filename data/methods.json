@@ -1,5 +1,5 @@
 {
-  "about": "AFK training and money methods for Hels Glasglo. Every number was copied from the RuneScape Wiki page in source_url on checked_date. null means the wiki did not give that value. GP figures use live Grand Exchange prices, so they drift day to day.",
+  "about": "AFK training and money methods. Every number was copied from the RuneScape Wiki page in source_url on checked_date. null means the wiki did not give that value. GP figures use live Grand Exchange prices, so they drift day to day. Facts about one player (what they own or have unlocked) are not kept here: each player's answers live in data/players/<name>/answers.json.",
   "methods": [
     {
       "type": "training",
@@ -13,9 +13,10 @@
       "minutes_between_clicks": null,
       "requirements": {
         "quests": [],
-        "other": ["Use Tumeken's Remnant (light) and the Empty Throne Room mine (dark): the wiki lists no requirements for either"]
+        "other": ["Use Tumeken's Remnant (light) and the Empty Throne Room mine (dark): the wiki lists no requirements for either"],
+        "skills": {},
+        "unlocks": []
       },
-      "missing": [],
       "unverified": [],
       "source_url": "https://runescape.wiki/w/Pay-to-play_Mining_training",
       "checked_date": "2026-10-04",
@@ -33,16 +34,17 @@
       "minutes_between_clicks": null,
       "requirements": {
         "quests": [],
-        "other": ["Assistant qualification (needed to enter the Stormguard Citadel dig site)"]
+        "other": [],
+        "skills": {},
+        "unlocks": [{"id": "assistant-qualification", "text": "Assistant qualification (needed to enter the Stormguard Citadel dig site)"}]
       },
-      "missing": [],
       "unverified": [
-        "All available mattock upgrades on your imcando mattock (the 117k rate assumes them)",
+        "All available mattock upgrades (the 117k rate assumes them)",
         "Full archaeologist's outfit (the 117k rate assumes it)"
       ],
       "source_url": "https://runescape.wiki/w/Archaeology_training",
       "checked_date": "2026-10-04",
-      "notes": "Stormguard Citadel - Research & Development north-west excavation site. The wiki gives one average ('around 117,000 experience an hour'), so low and high are the same. Signs of the porter help you stay AFK longer. You confirmed on 2026-10-04 that you have the assistant qualification and use an imcando mattock."
+      "notes": "Stormguard Citadel - Research & Development north-west excavation site. The wiki gives one average ('around 117,000 experience an hour'), so low and high are the same. Signs of the porter help you stay AFK longer."
     },
     {
       "type": "training",
@@ -56,9 +58,10 @@
       "minutes_between_clicks": null,
       "requirements": {
         "quests": [],
-        "other": ["Smithing autoheater for fully AFK forging (4,000 Dungeoneering tokens; needs 35 Smithing and 35 Dungeoneering)"]
+        "other": [],
+        "skills": {},
+        "unlocks": [{"id": "smithing-autoheater", "text": "Smithing autoheater for fully AFK forging (4,000 Dungeoneering tokens; needs 35 Smithing and 35 Dungeoneering)"}]
       },
-      "missing": ["Smithing autoheater (4,000 Dungeoneering tokens; you meet its 35 Smithing and 35 Dungeoneering requirements, but you said on 2026-10-04 you don't own one yet)"],
       "unverified": [],
       "source_url": "https://runescape.wiki/w/Pay-to-play_Smithing_training",
       "checked_date": "2026-10-04",
@@ -76,9 +79,10 @@
       "minutes_between_clicks": 3.0,
       "requirements": {
         "quests": ["Family Crest"],
-        "other": ["Smelting gauntlets (from Family Crest): 60 bars per batch, bars go straight to the metal bank"]
+        "other": ["Smelting gauntlets (from Family Crest): 60 bars per batch, bars go straight to the metal bank"],
+        "skills": {},
+        "unlocks": []
       },
-      "missing": [],
       "unverified": [],
       "source_url": "https://runescape.wiki/w/Money_making_guide/Smelting_elder_rune_bars",
       "checked_date": "2026-10-04",
@@ -96,13 +100,14 @@
       "minutes_between_clicks": null,
       "requirements": {
         "quests": ["Family Crest"],
-        "other": ["Cooking gauntlets (from Family Crest) to cut burning"]
+        "other": ["Cooking gauntlets (from Family Crest) to cut burning"],
+        "skills": {},
+        "unlocks": []
       },
-      "missing": [],
       "unverified": [],
       "source_url": "https://runescape.wiki/w/Pay-to-play_Cooking_training",
       "checked_date": "2026-10-04",
-      "notes": "Wiki table, levels 80-90: 231k XP/hr base, 280k on a portable range, 277.2k with urns. Stops burning at 90 with cooking gauntlets; the XP figures don't account for burnt fish. This is inventory-by-inventory work, not AFK, and the wiki gives no click time. The wiki shows a loss of 17,392,564 for the whole 80-90 step, but you only have about 220k XP of it left."
+      "notes": "Wiki table, levels 80-90: 231k XP/hr base, 280k on a portable range, 277.2k with urns. Stops burning at 90 with cooking gauntlets; the XP figures don't account for burnt fish. This is inventory-by-inventory work, not AFK, and the wiki gives no click time. The wiki shows a loss of 17,392,564 for the whole 80-90 step."
     },
     {
       "type": "training",
@@ -116,9 +121,10 @@
       "minutes_between_clicks": null,
       "requirements": {
         "quests": ["Family Crest"],
-        "other": ["Cooking gauntlets (from Family Crest) to cut burning"]
+        "other": ["Cooking gauntlets (from Family Crest) to cut burning"],
+        "skills": {},
+        "unlocks": []
       },
-      "missing": [],
       "unverified": [],
       "source_url": "https://runescape.wiki/w/Pay-to-play_Cooking_training",
       "checked_date": "2026-10-04",
@@ -136,9 +142,10 @@
       "minutes_between_clicks": null,
       "requirements": {
         "quests": [],
-        "other": ["70 Divination to enter the Hall of Memories (under the Memorial to Guthix)"]
+        "other": ["70 Divination to enter the Hall of Memories (under the Memorial to Guthix)"],
+        "skills": {},
+        "unlocks": []
       },
-      "missing": [],
       "unverified": [],
       "source_url": "https://runescape.wiki/w/Divination_training",
       "checked_date": "2026-10-04",
@@ -156,10 +163,11 @@
       "minutes_between_clicks": null,
       "requirements": {
         "quests": ["Enter the Abyss (miniquest)"],
-        "other": []
+        "other": [],
+        "skills": {},
+        "unlocks": []
       },
-      "missing": [],
-      "unverified": ["Your ranged armour (you don't remember what you use; the rate depends on gear)"],
+      "unverified": ["Your combat gear (the rate depends on gear)"],
       "source_url": "https://runescape.wiki/w/Abyss/Combat_training",
       "checked_date": "2026-10-04",
       "notes": "Wiki: 'around 500,000 - 600,000 experience per hour'. min_level 70 is the wiki's suggestion ('70 all combat stats'), not a hard requirement. Monsters stop attacking after 10 minutes; reset by running to the opposite corner and back. That is the closest thing to a click interval the wiki gives. The wiki doesn't say how the XP splits between Ranged, Defence and Constitution. Corruption Shot can add up to 30%. Wiki suggestions: area-of-effect abilities on Revolution, and health sustain (Vampyrism, blood amulet of fury, or a bunyip)."
@@ -176,13 +184,14 @@
       "minutes_between_clicks": 0.66,
       "requirements": {
         "quests": ["Necromancy!"],
-        "other": ["Tier 2 ritual site", "4 Multiply II glyphs"]
+        "other": ["Tier 2 ritual site", "4 Multiply II glyphs"],
+        "skills": {},
+        "unlocks": []
       },
-      "missing": [],
       "unverified": [],
       "source_url": "https://runescape.wiki/w/Money_making_guide/Performing_lesser_necroplasm_rituals",
       "checked_date": "2026-10-04",
-      "notes": "From the guide's setup table, level 66 row: 3,741,015 profit before tax (the other gp figures in this file are after tax). The guide's headline 8,900,905 after tax needs 8 Multiply III glyphs at 103 Necromancy; you have 101. One ritual takes 39.6 seconds (0.66 minutes), so this is low intensity but NOT AFK at 1-2 minutes per click. XP is the guide's figure."
+      "notes": "From the guide's setup table, level 66 row: 3,741,015 profit before tax (the other gp figures in this file are after tax). The guide's headline 8,900,905 after tax needs 8 Multiply III glyphs at 103 Necromancy. One ritual takes 39.6 seconds (0.66 minutes), so this is low intensity but NOT AFK at 1-2 minutes per click. XP is the guide's figure."
     },
     {
       "type": "money",
@@ -196,13 +205,14 @@
       "minutes_between_clicks": null,
       "requirements": {
         "quests": ["The Jack of Spades"],
-        "other": []
+        "other": [],
+        "skills": {},
+        "unlocks": []
       },
-      "missing": [],
       "unverified": [],
       "source_url": "https://runescape.wiki/w/Money_making_guide/Pickpocketing_Menaphos_market_guards",
       "checked_date": "2026-10-04",
-      "notes": "3,737,130 after tax. The guide's 4-5 minute AFK stretches rely on Crystal Mask (90 Magic; you have 67) and Light Form (needs The Light Within; not started), both listed as recommended. The wiki gives no AFK time without them, so this is null. Without the buffs, expect lower profit and more clicking. Thieving is already 110, so the XP is a bonus. Sticky Fingers relic (recommended, needs 84 Archaeology): you said on 2026-10-04 you haven't unlocked it. The guide's maximum is 3,000 pickpockets/hr with it and 2,000 without, and the 3.74M figure assumes the faster rate."
+      "notes": "3,737,130 after tax. The guide's 4-5 minute AFK stretches rely on Crystal Mask (90 Magic) and Light Form (needs The Light Within), both listed as recommended. The wiki gives no AFK time without them, so this is null. Without the buffs, expect lower profit and more clicking. Sticky Fingers relic (recommended, needs 84 Archaeology). The guide's maximum is 3,000 pickpockets/hr with it and 2,000 without, and the 3.74M figure assumes the faster rate."
     },
     {
       "type": "money",
@@ -216,13 +226,14 @@
       "minutes_between_clicks": null,
       "requirements": {
         "quests": [],
-        "other": []
+        "other": [],
+        "skills": {"Mining": 99},
+        "unlocks": []
       },
-      "missing": ["Mining cape (needs 99 Mining) is part of the guide's setup"],
       "unverified": ["The rest of the guide's gear: pickaxe of earth and song with Honed 6, magic golem outfit, grace of the elves, Luck of the Dwarves, Varrock armour 4"],
       "source_url": "https://runescape.wiki/w/Money_making_guide/Mining_banite",
       "checked_date": "2026-10-04",
-      "notes": "2,944,521 after tax plus 120,000 Mining XP (counts toward Mining 99). Recommended spot is the Pirates' Hideout mine in level-54 WILDERNESS; opt out of PvP. With weaker gear expect less of both. No click time given."
+      "notes": "2,944,521 after tax plus 120,000 Mining XP (counts toward Mining 99). Recommended spot is the Pirates' Hideout mine in level-54 WILDERNESS; opt out of PvP. With weaker gear expect less of both. No click time given. The guide's setup includes a mining cape (needs 99 Mining), so 99 Mining is treated as required."
     },
     {
       "type": "money",
@@ -236,17 +247,14 @@
       "minutes_between_clicks": null,
       "requirements": {
         "quests": ["The World Wakes"],
-        "other": ["Divine Conversion relic (built with 98 Archaeology and 86 Invention)"]
+        "other": [],
+        "skills": {},
+        "unlocks": [{"id": "divine-conversion-relic", "text": "Divine Conversion relic (unlocking it needs 98 Archaeology, 86 Invention and 85 Divination, all boostable)"}]
       },
-      "missing": [
-        "Archaeology 98, boostable from 96 (you have 91)",
-        "Invention 86 (you have 79; the wiki says it's boostable from 69 with an extreme invention potion)",
-        "Divine Conversion relic"
-      ],
       "unverified": [],
       "source_url": "https://runescape.wiki/w/Money_making_guide/Harvesting_vibrant_energy",
       "checked_date": "2026-10-04",
-      "notes": "Path C answer: vibrant energy is real (tier 7, needs 60 Divination, wisps in South Feldip Hills). The guide's 4,319,453 after tax (15,000 energy per hour) assumes the Divine Conversion relic, which you don't have yet. The wiki gives no rate without it. The wiki flags this guide as possibly out of date since a 4 May 2021 update."
+      "notes": "Path C answer: vibrant energy is real (tier 7, needs 60 Divination, wisps in South Feldip Hills). The guide's 4,319,453 after tax (15,000 energy per hour) assumes the Divine Conversion relic (its requirements are from https://runescape.wiki/w/Divine_Conversion, checked 2026-10-05). The wiki gives no rate without it. The wiki flags this guide as possibly out of date since a 4 May 2021 update."
     }
   ]
 }

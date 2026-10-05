@@ -29,6 +29,7 @@ from nicegui import app, run, ui
 from account import LEVEL_XP, read_account
 from check_methods import load_methods, load_quest_files
 from plan_session import build_plan, path_lines
+from players import read_answers
 from quest_path import difficulty_name, goal_progress, ranked_doable, skill_gaps, unlock_count
 from rs3_planner import (
     DEFAULT_USERNAME, INVENTION_ID, SKILL_NAMES, XP_FOR_99_ELITE, XP_FOR_99_NORMAL,
@@ -333,7 +334,7 @@ def afk_plan(account, hours, minutes):
     ui.label(f"{hours:g} hours · a click at most every {minutes:g} min").classes("muted")
 
     # The same function the terminal uses; a copy so each visit starts fresh.
-    plan = build_plan(copy.deepcopy(METHODS), account, minutes)
+    plan = build_plan(copy.deepcopy(METHODS), account, minutes, read_answers(USERNAME))
     for (letter, name), (_, method, why) in zip(PATH_NAMES, plan["paths"]):
         with panel():
             ui.label(f"{letter} · {name}").classes("label")

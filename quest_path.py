@@ -15,7 +15,7 @@ tools/fetch_quest_data.py). Your progress and levels come live from RuneMetrics.
 import textwrap
 from account import xp_to_level
 from players import player_dir
-from rs3_planner import DIFFICULTY_NAMES
+from rs3_planner import DIFFICULTY_NAMES, available_quests
 
 # Quest lengths as the wiki writes them, shortest first.
 LENGTH_ORDER = ["very short", "short", "short to medium", "medium", "medium to long",
@@ -108,20 +108,34 @@ def goal_progress(unlock, quests, account):
 # ---------------------------------------------------------------------------
 
 def read_last_goal(username):
-    """The big goal this player picked last time in the menu, or None."""
+    """The big goal this player picked last time, or None."""
     try:
         return (player_dir(username) / "last_goal").read_text(encoding="utf-8").strip() or None
-    except OSError:
+    except (OSError, ValueError):
+        # Missing or unreadable (OSError), or not valid text (UnicodeDecodeError is a
+        # ValueError): treat it as "nothing saved" rather than crash.
         return None
 
 
 def save_last_goal(username, name):
+    """Remember the big goal. Returns True if saved, False if not.
+    (The terminal ignores the answer; the app tells you when saving failed.)"""
     try:
         folder = player_dir(username)
         folder.mkdir(parents=True, exist_ok=True)
         (folder / "last_goal").write_text(name + "\n", encoding="utf-8")
+        return True
     except OSError:
-        pass   # remembering the choice is a convenience, not essential
+        return False
+
+
+def goal_for(unlocks, username):
+    """This player's big goal: their saved choice, else the first unlock (as the terminal menu does)."""
+    last = read_last_goal(username)
+    for unlock in unlocks:
+        if unlock["name"] == last:
+            return unlock
+    return unlocks[0]
 
 
 def choose_goal(unlocks, quests, account, username, preset=None):
@@ -173,6 +187,12 @@ def unlock_count(title, unlocks, quests):
     return sum(1 for u in unlocks if title in full_chain(u["final_quest"], quests))
 
 
+def quest_rank(title, unlocks, quests, account):
+    """Sort key for "best first": on the way to the most unlocks, then shortest, then easiest."""
+    difficulty = account["quests"].get(title, {}).get("difficulty", 999)
+    return (-unlock_count(title, unlocks, quests), length_rank(quests[title]["length"]), difficulty)
+
+
 def ranked_doable(goal, unlocks, quests, account):
     """
     Every quest you can do now, best first. Returns (titles, on_goal_path).
@@ -181,8 +201,7 @@ def ranked_doable(goal, unlocks, quests, account):
     (Also used by the browser app for "Tonight's quest" and "also on the way".)
     """
     def rank(title):
-        difficulty = account["quests"].get(title, {}).get("difficulty", 999)
-        return (-unlock_count(title, unlocks, quests), length_rank(quests[title]["length"]), difficulty)
+        return quest_rank(title, unlocks, quests, account)
 
     def doable(titles):
         return [t for t in titles if quest_state(t, quests, account)[0] in ("ready", "started")]
@@ -201,6 +220,55 @@ def pick_tonight(goal, unlocks, quests, account):
     """Best quest to do tonight. Returns (title, on_goal_path) or (None, False)."""
     titles, on_path = ranked_doable(goal, unlocks, quests, account)
     return (titles[0], on_path) if titles else (None, False)
+
+
+# ---------------------------------------------------------------------------
+# Lists for the Quests screen
+# ---------------------------------------------------------------------------
+
+def chain_rows(goal, quests, account):
+    """The goal's chain, prerequisites first, one dict per quest:
+    {"title", "state", "reasons", "difficulty", "length"} (state/reasons as quest_state gives them)."""
+    rows = []
+    for title in full_chain(goal["final_quest"], quests):
+        state, reasons = quest_state(title, quests, account)
+        rows.append({"title": title, "state": state, "reasons": reasons,
+                     "difficulty": difficulty_name(title, account), "length": quests[title]["length"]})
+    return rows
+
+
+def other_requirements(chain, quests, account):
+    """The wiki's other requirements for the unfinished quests in a chain, as (text, quest) pairs."""
+    return [(text, title) for title in chain if title not in account["completed_quests"]
+            for text in quests[title]["other_requirements"]]
+
+
+def useful_to_start(unlocks, quests, account):
+    """Quests RuneMetrics says you can start (eligible, not started) that lead to
+    one of the big unlocks, best first (ties in name order)."""
+    on_chains = {t for u in unlocks for t in full_chain(u["final_quest"], quests)}
+    titles = sorted(t for t, q in account["quests"].items()
+                    if t in on_chains and q.get("userEligible") is True and q.get("status") == "NOT_STARTED")
+    return sorted(titles, key=lambda t: quest_rank(t, unlocks, quests, account))
+
+
+def eligible_by_difficulty(account):
+    """Every quest you can start now, grouped: [("Novice", [titles]), ...].
+    Same list as the terminal's (available_quests). Known difficulties come first in
+    the usual order; a code RuneMetrics never sent before gets its own group at the end."""
+    eligible = available_quests({"quests": list(account["quests"].values())})
+    groups = {}
+    for q in eligible:   # already sorted by difficulty, then name
+        code = q["difficulty"]
+        groups.setdefault(DIFFICULTY_NAMES.get(code, f"Unknown ({code})"), []).append(q["title"])
+    known = [(name, groups[name]) for name in DIFFICULTY_NAMES.values() if name in groups]
+    unknown = [(name, titles) for name, titles in groups.items() if name not in DIFFICULTY_NAMES.values()]
+    return known + unknown
+
+
+def started_quests(account):
+    """Quests RuneMetrics marks as started, in name order."""
+    return sorted(t for t, q in account["quests"].items() if q.get("status") == "STARTED")
 
 
 # ---------------------------------------------------------------------------
@@ -236,11 +304,10 @@ def print_quest_path(goal, unlocks, quests, account):
     for skill, (level, have, xp, needed_by) in gaps.items():
         print(f"    {skill} {have} -> {level}: {xp:,.0f} XP  (for {', '.join(needed_by)})")
 
-    other = [(t, o) for t in chain if t not in account["completed_quests"]
-             for o in quests[t]["other_requirements"]]
+    other = other_requirements(chain, quests, account)
     if other:
         print("\n  Other requirements (check these yourself):")
-        for title, text in other:
+        for text, title in other:
             print(f"    {text}  (for {title})")
     print("  Levels are as the wiki lists them; some may be boostable - see each quest's page.")
 

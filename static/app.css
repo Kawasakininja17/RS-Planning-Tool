@@ -150,3 +150,10 @@ body { font-family: "Alegreya", Georgia, serif; font-size: 17px; line-height: 1.
 /* A chip as wide as its panel, text on the left (recent players list). */
 .q-btn.chip.wide { width: 100%; }
 .q-btn.chip.wide .q-btn__content { justify-content: flex-start; }
+
+/* Change goal screen: a wide chip with the goal's name over its progress, left-aligned. */
+.q-btn.chip.goal-choice { min-height: 60px; padding: 8px 14px; }
+.goal-choice .q-btn__content { text-align: left; }   /* Quasar centres button text here; a long name wraps left-aligned */
+.goal-choice .goal-name { font-family: "Cinzel", serif; font-weight: 700; font-size: 16px; }
+.goal-choice .goal-progress { font-family: "Alegreya", Georgia, serif; font-weight: 400; font-size: 14px; color: var(--muted); }
+.q-btn.chip.goal-choice.selected .goal-progress { color: var(--glacial); }

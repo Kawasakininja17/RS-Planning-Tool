@@ -20,8 +20,10 @@ may suggest training or money methods an ironman can't use.
 
 ## Browser app
 
-A phone-friendly page with Home, Ready to play, your plan, and **Skills**: all 29
-skills with level, XP and XP left to 99 (closest first), with finished skills at the bottom.
+A phone-friendly page with Home, Ready to play, your plan, **Skills** (all 29
+skills with level, XP and XP left to 99, closest first, with finished skills at
+the bottom) and **Quests** (your big goal: tonight's quest, the skills still short,
+the whole quest chain with statuses, the quests you can start now and the ones in progress).
 
 **One-time setup** (creates `.venv/`, the project's private Python toolbox,
 and installs NiceGUI into it, not into your system):
@@ -118,6 +120,11 @@ An active session first shows a menu of big goals (from `data/unlocks.json`)
 with your progress on each. Type a number; Enter keeps your last choice
 (remembered per player).
 You can also pick it up front: `--goal 1` or `--goal "Prifddinas"`.
+
+In the browser app, choose the big goal on the Quests screen (**Change goal**).
+The app and the terminal share the choice (`data/players/<player>/last_goal`),
+so picking a goal in one makes it the default in the other. Home's Big goal card
+and the Active plan follow it.
 
 For the chosen goal it shows the full quest chain (prerequisites first) with
 the status of each quest, the skill levels still needed, other requirements

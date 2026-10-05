@@ -39,7 +39,10 @@ from player_cache import entry_for, fetch_safely, needs_fetch, record_failure, r
 from players import (
     check_name, folder_name, known_players, read_answers, read_current, save_answer, save_current,
 )
-from quest_path import difficulty_name, goal_for, goal_progress, ranked_doable, skill_gaps, unlock_count
+from quest_path import (
+    chain_rows, difficulty_name, eligible_by_difficulty, goal_for, goal_progress, other_requirements,
+    ranked_doable, save_last_goal, skill_gaps, started_quests, unlock_count, useful_to_start,
+)
 from rs3_planner import (
     INVENTION_ID, SKILL_NAMES, XP_FOR_99_ELITE, XP_FOR_99_NORMAL, xp_needed_for_99,
 )
@@ -191,14 +194,17 @@ def bar(fraction, thin=False):
         ui.element("div").classes("bar-fill").style(f"width: {fraction * 100:.1f}%")
 
 
+# Bottom nav buttons that have a screen; the others say "coming soon".
+NAV_TARGETS = {"Home": "/", "Skills": "/skills", "Quests": "/quests"}
+
+
 def bottom_nav(active):
     with ui.element("div").classes("bottom-nav"):
         with ui.element("div").classes("bottom-nav-inner"):
             for name in ("Home", "Skills", "Quests", "Progress"):
-                if name == "Home":
-                    action = lambda: ui.navigate.to("/")
-                elif name == "Skills":
-                    action = lambda: ui.navigate.to("/skills")
+                target = NAV_TARGETS.get(name)
+                if target:
+                    action = lambda t=target: ui.navigate.to(t)
                 else:
                     action = lambda n=name: ui.notify(f"{n}: coming soon")
                 button(name, on_click=action).props("flat no-caps").classes(
@@ -405,6 +411,177 @@ def skill_row(row, right_text):
         ui.label(right_text).classes("muted" + (" done-text" if row["done"] else ""))
     bar(row["fraction"], thin=True)
     ui.label(f"{row['xp']:,.0f} XP").classes("muted small")
+
+
+# ---------------------------------------------------------------------------
+# Screen: Quests
+# ---------------------------------------------------------------------------
+
+STATUS_WORDS = {"ready": "Ready now", "started": "Started", "blocked": "Blocked"}
+
+
+def difficulty_text(title, account):
+    """The quest's difficulty, or — when RuneMetrics doesn't list the quest."""
+    name = difficulty_name(title, account)
+    return NO_VALUE if name == "?" else name
+
+
+@ui.page("/quests", title="Quests - RS3 Planner")
+def quests_page():
+    entry = current_entry()
+    if entry is None:   # nobody chosen yet: go and pick a player
+        return RedirectResponse("/player")
+
+    with ui.column().classes("page"):
+        ui.label("Quests").classes("title")
+        ui.label(entry["name"]).classes("subtitle")
+        ui.label(updated_text(entry)).classes("muted")
+
+        account = entry["account"]
+        if account is None:
+            no_data_panel(entry)
+            bottom_nav("Quests")
+            return
+
+        goal = current_goal()
+        numbers = big_goal_numbers(goal, account)
+        with panel():
+            ui.label("Big goal").classes("label")
+            ui.label(goal["name"]).classes("subtitle")
+            ui.label(f"via {goal['final_quest']}").classes("muted")
+            ui.label(goal["unlocks"]).classes("muted small")
+            ui.label(f"{numbers['done']} of {numbers['chain']} quests done").classes("muted")
+            bar(numbers["done"] / numbers["chain"])   # a chain always holds at least the final quest
+            button("Change goal", on_click=lambda: ui.navigate.to("/quests/goal")).props(
+                "unelevated no-caps").classes("btn-quiet")
+
+        tonight_panels(goal, account)
+        skills_short_panel(goal, account, "Skills short for this chain")
+        chain_panel(goal, account)
+        other_requirements_panel(goal, account)
+        start_now_panel(account)
+        in_progress_panel(account)
+
+    bottom_nav("Quests")
+
+
+def chain_panel(goal, account):
+    """Every quest in the goal's chain, prerequisites first, with its status."""
+    with panel():
+        ui.label("Quest chain").classes("label green")
+        for row in chain_rows(goal, QUESTS, account):
+            if row["state"] == "done":
+                ui.label(f"{row['title']} · Done").classes("muted small")
+                continue
+            ui.label(row["title"]).classes("heading")
+            ui.label(f"{difficulty_text(row['title'], account)} · {row['length']}").classes("muted small")
+            status = STATUS_WORDS[row["state"]]
+            if row["reasons"]:
+                status += ": " + "; ".join(row["reasons"])
+            ui.label(status).classes("muted small" + (" done-text" if row["state"] == "ready" else ""))
+
+
+def other_requirements_panel(goal, account):
+    """The wiki's other requirements in the chain. Hidden when there are none."""
+    chain, _ = goal_progress(goal, QUESTS, account)
+    lines = other_requirements(chain, QUESTS, account)
+    if not lines:
+        return
+    with panel():
+        ui.label("Other requirements (check these yourself)").classes("label")
+        for text, title in lines:
+            ui.label(f"{text} (for {title})").classes("muted small")
+
+
+def start_now_panel(account):
+    """Quests you can start that lead to an unlock, plus a Show all button for the rest."""
+    useful = useful_to_start(UNLOCKS, QUESTS, account)
+    groups = eligible_by_difficulty(account)
+    total = sum(len(titles) for _, titles in groups)
+    with panel():
+        ui.label("Start now").classes("label green")
+        if not useful:
+            ui.label("No quest on your unlock chains can be started right now.").classes("muted")
+        for title in useful:
+            ui.label(title).classes("heading")
+            ui.label(f"{difficulty_text(title, account)} · {QUESTS[title]['length']} · "
+                     f"helps {unlock_count(title, UNLOCKS, QUESTS)} of {len(UNLOCKS)} unlocks").classes("muted small")
+        if not total:
+            return
+
+        show_text = f"Show all {total} you can start"
+        toggle = button(show_text).props("unelevated no-caps").classes("btn-quiet")
+        # The full list is drawn now but hidden; the button shows or hides it (nothing is fetched).
+        full_list = ui.column().classes("w-full gap-1")
+        with full_list:
+            for name, titles in groups:
+                ui.label(f"{name} ({len(titles)})").classes("label")
+                for title in titles:
+                    ui.label(title).classes("muted small")
+        full_list.set_visibility(False)
+
+        def flip():
+            showing = not full_list.visible
+            full_list.set_visibility(showing)
+            toggle.set_text("Hide the full list" if showing else show_text)
+
+        toggle.on_click(flip)
+
+
+def in_progress_panel(account):
+    """Quests RuneMetrics says you've started. Hidden when there are none."""
+    started = started_quests(account)
+    if not started:
+        return
+    with panel():
+        ui.label("In progress").classes("label")
+        for title in started:
+            with ui.row().classes("row-line"):
+                ui.label(title).classes("heading")
+                ui.label(difficulty_text(title, account)).classes("muted")
+
+
+# ---------------------------------------------------------------------------
+# Screen: Change goal
+# ---------------------------------------------------------------------------
+
+@ui.page("/quests/goal", title="Big goal - RS3 Planner")
+def goal_page():
+    entry = current_entry()
+    if entry is None:   # nobody chosen yet: go and pick a player
+        return RedirectResponse("/player")
+
+    def choose(unlock):
+        # The same file the terminal's goal menu uses, so both agree.
+        if save_last_goal(CURRENT["name"], unlock["name"]):
+            ui.navigate.to("/quests")
+        else:
+            ui.notify("Couldn't save your goal choice")
+
+    with ui.column().classes("page"):
+        back_button("/quests")
+        ui.label("Big goal").classes("title")
+
+        account = entry["account"]
+        if account is None:
+            no_data_panel(entry)
+            bottom_nav("Quests")
+            return
+
+        current = current_goal()
+        with panel():
+            ui.label("Choose your big goal").classes("label")
+            for unlock in UNLOCKS:
+                numbers = big_goal_numbers(unlock, account)
+                selected = " selected" if unlock["name"] == current["name"] else ""
+                with button(on_click=lambda u=unlock: choose(u)).props("unelevated no-caps").classes(
+                        "chip wide goal-choice" + selected):
+                    with ui.column().classes("gap-0"):
+                        ui.label(unlock["name"]).classes("goal-name")
+                        ui.label(f"{numbers['done']} of {numbers['chain']} quests done · "
+                                 f"{skills_short(numbers['short'])}").classes("goal-progress")
+
+    bottom_nav("Quests")
 
 
 # ---------------------------------------------------------------------------

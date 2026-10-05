@@ -44,6 +44,7 @@ body { font-family: "Alegreya", Georgia, serif; font-size: 17px; line-height: 1.
 .subtitle { font-family: "Uncial Antiqua", serif; font-size: 21px; color: var(--parchment); }
 .label    { font-family: "Cinzel", serif; font-weight: 700; font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent-red); }
 .label.green { color: var(--accent-green); }
+.muted.done-text { color: var(--accent-green); }   /* "Done" on the Skills screen */
 .heading  { font-family: "Cinzel", serif; font-weight: 700; font-size: 18px; color: var(--parchment); }
 .muted    { color: var(--muted); font-size: 15px; }
 .small    { font-size: 14px; }

@@ -32,7 +32,7 @@ from pathlib import Path
 from fastapi.responses import RedirectResponse   # sends a page to /player when no player is chosen
 from nicegui import app, run, ui
 
-from account import LEVEL_XP
+from account import LEVEL_XP, skill_rows
 from check_methods import load_methods, load_quest_files
 from plan_session import build_plan, path_lines
 from player_cache import entry_for, fetch_safely, needs_fetch, record_failure, record_success
@@ -188,6 +188,8 @@ def bottom_nav(active):
             for name in ("Home", "Skills", "Quests", "Progress"):
                 if name == "Home":
                     action = lambda: ui.navigate.to("/")
+                elif name == "Skills":
+                    action = lambda: ui.navigate.to("/skills")
                 else:
                     action = lambda n=name: ui.notify(f"{n}: coming soon")
                 button(name, on_click=action).props("flat no-caps").classes(
@@ -344,6 +346,54 @@ def play_page():
                 ui.label("Show my plan")
 
     bottom_nav("")
+
+
+# ---------------------------------------------------------------------------
+# Screen: Skills
+# ---------------------------------------------------------------------------
+
+@ui.page("/skills", title="Skills - RS3 Planner")
+def skills_page():
+    entry = current_entry()
+    if entry is None:   # nobody chosen yet: go and pick a player
+        return RedirectResponse("/player")
+
+    with ui.column().classes("page"):
+        ui.label("Skills").classes("title")
+        ui.label(entry["name"]).classes("subtitle")
+        ui.label(updated_text(entry)).classes("muted")
+
+        if entry["account"] is None:
+            no_data_panel(entry)
+            bottom_nav("Skills")
+            return
+
+        # The order and numbers come from account.skill_rows (tested in tests/test_account.py).
+        rows = skill_rows(entry["account"])
+        unfinished = [row for row in rows if not row["done"]]
+        done = [row for row in rows if row["done"]]
+
+        if unfinished:
+            with panel():
+                ui.label("To 99").classes("label")
+                for row in unfinished:
+                    skill_row(row, f"{row['xp_left']:,.0f} XP left")
+        if done:
+            with panel():
+                ui.label("Done").classes("label green")
+                for row in done:
+                    skill_row(row, "Done")
+
+    bottom_nav("Skills")
+
+
+def skill_row(row, right_text):
+    """One skill: name and level on the left, XP left (or Done) on the right, a bar, then its XP."""
+    with ui.row().classes("row-line"):
+        ui.label(f"{row['name']} {row['level_text']}").classes("heading")
+        ui.label(right_text).classes("muted" + (" done-text" if row["done"] else ""))
+    bar(row["fraction"], thin=True)
+    ui.label(f"{row['xp']:,.0f} XP").classes("muted small")
 
 
 # ---------------------------------------------------------------------------

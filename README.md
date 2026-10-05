@@ -20,7 +20,8 @@ may suggest training or money methods an ironman can't use.
 
 ## Browser app
 
-A phone-friendly page with Home, Ready to play and your plan.
+A phone-friendly page with Home, Ready to play, your plan, and **Skills**: all 29
+skills with level, XP and XP left to 99 (closest first), with finished skills at the bottom.
 
 **One-time setup** (creates `.venv/`, the project's private Python toolbox,
 and installs NiceGUI into it, not into your system):

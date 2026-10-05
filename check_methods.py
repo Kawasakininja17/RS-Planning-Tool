@@ -32,7 +32,7 @@ QUESTS_FILE = DATA_DIR / "quests.json"
 
 # Every method must have exactly these fields.
 REQUIRED_FIELDS = [
-    "type", "name", "skill", "min_level",
+    "type", "name", "skill", "min_level", "max_level",
     "xp_per_hour_low", "xp_per_hour_high", "gp_per_hour", "gp_after_tax",
     "minutes_between_clicks", "requirements", "unverified",
     "source_url", "checked_date", "notes",
@@ -93,9 +93,15 @@ def check_method(method, position):
             if skill not in SKILL_NAMES:
                 problems.append(f"{label}: unknown skill '{skill}'")
 
-    # 4. Level.
+    # 4. Levels. min_level is where the method starts; max_level is the top of the
+    #    level band the wiki's rates were quoted for (null = no upper limit).
     if not is_whole_number(method["min_level"]) or not 1 <= method["min_level"] <= 120:
         problems.append(f"{label}: min_level must be a whole number from 1 to 120")
+    top = method["max_level"]
+    if top is not None and (not is_whole_number(top) or not 1 <= top <= 120):
+        problems.append(f"{label}: max_level must be a whole number from 1 to 120, or null")
+    elif top is not None and is_whole_number(method["min_level"]) and top < method["min_level"]:
+        problems.append(f"{label}: max_level ({top}) is below min_level ({method['min_level']})")
 
     # 5. XP and GP. null (None in Python) means "the wiki didn't say".
     low, high, gp = method["xp_per_hour_low"], method["xp_per_hour_high"], method["gp_per_hour"]
@@ -328,7 +334,7 @@ def xp_text(method):
 
 
 def print_table(methods):
-    header = f"{'Type':<9}{'Method':<43}{'Skill':<15}{'Lvl':>4}  {'XP/hr':>10}  {'GP/hr':>7}  {'Click':>5}  Unlocks"
+    header = f"{'Type':<9}{'Method':<43}{'Skill':<15}{'Lvl':>6}  {'XP/hr':>10}  {'GP/hr':>7}  {'Click':>5}  Unlocks"
     print(header)
     print("-" * len(header))
     for m in methods:
@@ -341,8 +347,10 @@ def print_table(methods):
         ready = "ok" if not unlocks else f"{len(unlocks)} to confirm"
         if m["unverified"]:
             ready += "*"
-        print(f"{m['type']:<9}{name:<43}{m['skill']:<15}{m['min_level']:>4}  {xp_text(m):>10}  {gp:>7}  {click:>5}  {ready}")
+        band = f"{m['min_level']}-{m['max_level']}" if m["max_level"] is not None else f"{m['min_level']}+"
+        print(f"{m['type']:<9}{name:<43}{m['skill']:<15}{band:>6}  {xp_text(m):>10}  {gp:>7}  {click:>5}  {ready}")
     print()
+    print("Lvl: the level band the wiki's rates are for ('90+' = no upper limit).")
     print("Click: '?' = the wiki doesn't say.   Unlocks: how many things each player confirms in the app")
     print("(RuneMetrics can't see them); * = the rate also assumes something public data can't confirm.")
     print("Levels and quests are checked live by plan_session.py.")

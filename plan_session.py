@@ -54,6 +54,16 @@ def check_method_for_session(method, account, max_minutes, answers):
         level = account["skills"][skill]["level"]
         if level < method["min_level"]:
             blocked.append(f"needs {skill} {method['min_level']} (you have {level})")
+    # Level band: the wiki's rates are for min_level..max_level. Past max_level in
+    # EVERY skill the method trains, you've outgrown it. (A two-skill method stays
+    # while either skill is still inside the band.) null = no upper limit.
+    top = method["max_level"]
+    if top is not None:
+        levels = [(skill, account["skills"][skill]["level"]) for skill in skills]
+        if all(level > top for _, level in levels):
+            have = " and ".join(f"{skill} {level}" for skill, level in levels)
+            blocked.append(f"you've outgrown this ({have}; this method's rates are "
+                           f"for levels {method['min_level']}–{top})")
     # Extra levels some methods need beyond min_level (e.g. 99 Mining for a mining cape).
     for skill, level in method["requirements"]["skills"].items():
         have = account["skills"][skill]["level"]

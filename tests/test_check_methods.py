@@ -7,6 +7,7 @@ from check_methods import check_method, check_unlock_ids_match
 
 VALID = {
     "type": "training", "name": "Test method", "skill": "Mining", "min_level": 90,
+    "max_level": None,
     "xp_per_hour_low": 1000, "xp_per_hour_high": 2000,
     "gp_per_hour": None, "gp_after_tax": None, "minutes_between_clicks": None,
     "requirements": {
@@ -63,6 +64,35 @@ class CheckMethodTests(unittest.TestCase):
     def test_same_unlock_twice_in_one_method(self):
         twice = [{"id": "a", "text": "A"}, {"id": "a", "text": "A"}]
         self.assertTrue(mentions(check_method(method_with(unlocks=twice), 1), "listed twice"))
+
+
+class MaxLevelCheckTests(unittest.TestCase):
+    """max_level: the top of the level band the wiki's rates are for (None = no top)."""
+
+    def with_max(self, value):
+        method = copy.deepcopy(VALID)   # min_level is 90
+        method["max_level"] = value
+        return check_method(method, 1)
+
+    def test_missing_is_a_problem(self):
+        method = copy.deepcopy(VALID)
+        del method["max_level"]
+        self.assertIn("Method #1 (Test method): missing field 'max_level'", check_method(method, 1))
+
+    def test_null_is_fine(self):
+        self.assertEqual(self.with_max(None), [])
+
+    def test_at_or_above_min_level_is_fine(self):
+        self.assertEqual(self.with_max(90), [])
+        self.assertEqual(self.with_max(97), [])
+
+    def test_below_min_level_is_a_problem(self):
+        self.assertIn("Method #1 (Test method): max_level (89) is below min_level (90)", self.with_max(89))
+
+    def test_not_a_whole_number_or_out_of_range(self):
+        for bad in ("97", 97.5, True, 0, 121):
+            self.assertTrue(mentions(self.with_max(bad), "max_level must be a whole number from 1 to 120, or null"),
+                            f"{bad!r} should be refused")
 
 
 class UnlockIdsMatchTests(unittest.TestCase):

@@ -129,12 +129,58 @@ def pick_paths(ready):
     return path_a, path_b, path_c
 
 
+RUNNER_UPS = 2   # how many "Also good" methods each path shows
+
+
+def runner_ups(ready, picks, count=RUNNER_UPS):
+    """
+    For paths A, B and C: the next `count` best ready methods, ranked by that
+    path's own rule (the same rules as pick_paths). A method already picked on
+    any path is never repeated. Returns [list for A, list for B, list for C].
+    """
+    others = [m for m in ready if not any(m is p for p in picks)]
+    training = [m for m in others if m["type"] == "training"]
+    money = [m for m in others if m["type"] == "money"]
+    # sorted() keeps the methods file's order for ties, like min()/max() in pick_paths.
+    by_closest = sorted(training, key=lambda m: (m["_gap"], -m["xp_per_hour_low"]))
+    by_xp = sorted(training, key=lambda m: (m["xp_per_hour_low"], m["xp_per_hour_high"]), reverse=True)
+    by_gp = sorted(money, key=lambda m: m["gp_per_hour"], reverse=True)
+    return [by_closest[:count], by_xp[:count], by_gp[:count]]
+
+
+def also_text(method):
+    """One runner-up in a line, e.g. 'Choking ivy (Woodcutting, 86,000–126,000 XP/hr)'."""
+    if method["type"] == "money":
+        rate = f"{method['gp_per_hour']:,} gp/hr"
+    elif method["xp_per_hour_low"] == method["xp_per_hour_high"]:
+        rate = f"{method['xp_per_hour_low']:,} XP/hr"
+    else:
+        rate = f"{method['xp_per_hour_low']:,}–{method['xp_per_hour_high']:,} XP/hr"
+    return f"{method['name']} ({method['skill']}, {rate})"
+
+
+def split_ruled_out(ruled_out):
+    """
+    Returns (blocked, finished_count). Methods ruled out ONLY because you've
+    finished the skill ("already 99") or outgrown the method are just counted;
+    everything else (levels too low, quests, your answers, click time) is listed.
+    """
+    blocked, finished = [], 0
+    for method, reasons in ruled_out:
+        if all(r == "already 99" or r.startswith("you've outgrown this") for r in reasons):
+            finished += 1
+        else:
+            blocked.append((method, reasons))
+    return blocked, finished
+
+
 def build_plan(methods, account, max_minutes, answers):
     """
     Sort every method into "ready" or "ruled out", then pick paths A, B and C
     with a one-line reason each. Used by main() here and by the browser app (app.py).
     answers = {unlock id: True/False} from players.read_answers().
-    Returns {"ready": [...], "ruled_out": [(method, reasons)], "paths": [(title, method, why)]}.
+    Returns {"ready": [...], "ruled_out": [(method, reasons)], "paths": [(title, method, why)],
+             "also": [runner-ups for A, for B, for C]}.
     """
     ready, ruled_out = [], []
     for method in methods:
@@ -167,6 +213,7 @@ def build_plan(methods, account, max_minutes, answers):
         "paths": [("PATH A: finish something", path_a, why_a),
                   ("PATH B: max XP", path_b, why_b),
                   ("PATH C: gold", path_c, why_c)],
+        "also": runner_ups(ready, [path_a, path_b, path_c]),   # "Also good" under each path
     }
 
 
@@ -221,7 +268,7 @@ def path_lines(method, account, hours):
     return lines
 
 
-def print_path(title, method, why, account, hours):
+def print_path(title, method, why, account, hours, also=()):
     print(title)
     if method is None:
         print("  Nothing in methods.json fits this session.\n")
@@ -237,6 +284,9 @@ def print_path(title, method, why, account, hours):
             print(f"  {label}: {text}")
 
     print(f"  Why:     {why}")
+    if also:   # the next best methods for this path, for a choice
+        print(textwrap.fill("; ".join(also_text(m) for m in also), width=100,
+                            initial_indent="  Also good: ", subsequent_indent=" " * 13))
     for warning in method["_warnings"]:
         print(f"  Watch:   {warning}")
     for unlock in method["_unanswered"]:
@@ -321,8 +371,8 @@ def main():
           f"{session} session")
     print(f"{len(plan['ready'])} of {len(methods)} methods fit this session.\n")
 
-    for title, method, why in plan["paths"]:
-        print_path(title, method, why, account, hours)
+    for (title, method, why), also in zip(plan["paths"], plan["also"]):
+        print_path(title, method, why, account, hours, also)
 
     print("Ruled out for this session:")
     for method, reasons in plan["ruled_out"]:

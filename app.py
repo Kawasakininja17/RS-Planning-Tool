@@ -34,7 +34,7 @@ from nicegui import app, run, ui
 
 from account import LEVEL_XP, skill_rows
 from check_methods import load_methods, load_quest_files
-from plan_session import build_plan, path_lines
+from plan_session import also_text, build_plan, path_lines, split_ruled_out
 from player_cache import entry_for, fetch_safely, needs_fetch, record_failure, record_success
 from players import (
     check_name, folder_name, known_players, read_answers, read_current, save_answer, save_current,
@@ -624,7 +624,7 @@ def afk_plan(entry, hours, minutes):
 
     # The same function the terminal uses; a copy so each visit starts fresh.
     plan = build_plan(copy.deepcopy(METHODS), account, minutes, answers)
-    for (letter, path_name), (_, method, why) in zip(PATH_NAMES, plan["paths"]):
+    for (letter, path_name), (_, method, why), also in zip(PATH_NAMES, plan["paths"], plan["also"]):
         with panel():
             ui.label(f"{letter} · {path_name}").classes("label")
             if method is None:
@@ -636,6 +636,8 @@ def afk_plan(entry, hours, minutes):
                 text = text.replace(" -> ", " → ")
                 ui.label(f"{label}: {text}" if label else text).classes("" if label else "muted small")
             ui.label(why).classes("muted small")
+            if also:   # the next best methods for this path, so there's a choice
+                ui.label("Also good: " + "; ".join(also_text(m) for m in also)).classes("muted small")
             for warning in method["_warnings"]:
                 ui.label(f"Watch: {warning}").classes("muted small")
             for unlock in method["_unanswered"]:
@@ -647,24 +649,28 @@ def afk_plan(entry, hours, minutes):
 
 def ruled_out_panel(plan):
     """
-    Every method the planner ruled out for this session, with the checker's own
-    reasons (the list the terminal prints). Folded behind a button; hidden when
-    nothing was ruled out.
+    The methods the planner ruled out for this session, with the checker's own
+    reasons. Methods ruled out only because you've finished the skill or outgrown
+    the method are just counted (split_ruled_out). Folded behind a button; hidden
+    when nothing was ruled out. (The terminal still prints the full list.)
     """
     ruled_out = plan["ruled_out"]
     if not ruled_out:
         return
+    blocked, finished = split_ruled_out(ruled_out)
     with panel():
         show_text = f"Why not the others? ({len(ruled_out)} ruled out)"
         toggle = button(show_text).props("unelevated no-caps").classes("btn-quiet")
         # Drawn now but hidden; the button shows or hides it (nothing is fetched).
         reasons_list = ui.column().classes("w-full gap-2")
         with reasons_list:
-            for method, reasons in ruled_out:
+            for method, reasons in blocked:
                 with ui.column().classes("gap-0"):
                     ui.label(method["name"]).classes("heading")
                     ui.label(method["skill"]).classes("muted small")
                     ui.label("; ".join(reasons)).classes("muted small")
+            if finished:
+                ui.label(f"Also skipped: {finished} you've finished (99) or outgrown.").classes("muted small")
         reasons_list.set_visibility(False)
 
         def flip():

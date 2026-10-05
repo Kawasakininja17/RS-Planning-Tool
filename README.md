@@ -79,6 +79,11 @@ python3 check_methods.py
 Run this after every edit to `methods.json`. It names any missing field,
 typo or broken value, and the line of any JSON syntax error.
 
+Methods cover early, mid and late levels. Each has a level band (`min_level`
+to `max_level`): the levels the wiki's rates were quoted for. Once you're past
+a method's band in every skill it trains, the planner lists it under "Ruled out"
+(in the app: **Why not the others?**) as "you've outgrown this".
+
 ## Planning a session
 
 ```bash
@@ -101,8 +106,10 @@ and suggests three paths:
 - **B, max XP:** the most XP per hour (judged on the low end of each range)
 - **C, gold:** the most gp per hour
 
-Methods whose click time the wiki doesn't give are kept, but marked
-"click time unknown". Everything ruled out is listed at the end with the reason.
+Under each path, **Also good** names the next two best methods for that path, so
+you have a choice. Methods whose click time the wiki doesn't give are kept, but
+marked "click time unknown". Everything ruled out is listed at the end with the
+reason; in the app, methods you've finished (99) or outgrown are just counted.
 
 Some methods need things RuneMetrics can't see, like a smithing autoheater. The
 plan shows "Check: needs …" with **I have it** / **I don't**; your answers are saved

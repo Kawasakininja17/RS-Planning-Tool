@@ -68,6 +68,9 @@ PASSWORD_NOTE = "Only your public RuneMetrics name. Never enter a password."
 IRONMAN_NOTE = ("Ironman accounts aren't supported yet. Plans may suggest training or "
                 "money methods an ironman can't use.")
 
+# Every unlock id in methods.json -> its wording, for the "Your answers" list.
+UNLOCK_TEXTS = {u["id"]: u["text"] for m in METHODS for u in m["requirements"]["unlocks"]}
+
 # Live account data, one entry per player, keyed by folder_name() so "hels glasglo"
 # and "Hels Glasglo" share one entry. Each name is fetched once while the app runs,
 # and again only on Refresh, so we don't hammer the unofficial RuneMetrics API.
@@ -384,15 +387,23 @@ def plan_page(hours: float = DEFAULT_HOURS, session: str = "afk", minutes: float
 
 
 def afk_plan(entry, hours, minutes):
-    account = entry["account"]
+    account, name = entry["account"], entry["name"]
     ui.label("Your AFK plan").classes("title")
     ui.label(f"{hours:g} hours · a click at most every {minutes:g} min").classes("muted")
 
+    try:
+        answers = read_answers(name)
+    except ValueError as err:   # a broken answers.json: say so instead of crashing
+        with panel(crimson=True):
+            ui.label("Your answers file can't be read").classes("label")
+            ui.label(str(err)).classes("muted")
+        return
+
     # The same function the terminal uses; a copy so each visit starts fresh.
-    plan = build_plan(copy.deepcopy(METHODS), account, minutes, read_answers(entry["name"]))
-    for (letter, name), (_, method, why) in zip(PATH_NAMES, plan["paths"]):
+    plan = build_plan(copy.deepcopy(METHODS), account, minutes, answers)
+    for (letter, path_name), (_, method, why) in zip(PATH_NAMES, plan["paths"]):
         with panel():
-            ui.label(f"{letter} · {name}").classes("label")
+            ui.label(f"{letter} · {path_name}").classes("label")
             if method is None:
                 ui.label("Nothing in the methods file fits this session.").classes("muted")
                 continue
@@ -404,6 +415,38 @@ def afk_plan(entry, hours, minutes):
             ui.label(why).classes("muted small")
             for warning in method["_warnings"]:
                 ui.label(f"Watch: {warning}").classes("muted small")
+            for unlock in method["_unanswered"]:
+                unlock_question(name, unlock)
+
+    your_answers(name, answers)
+
+
+def answer_and_redraw(name, unlock_id, has_it):
+    save_answer(name, unlock_id, has_it)
+    ui.navigate.reload()   # redraw the plan: "I don't" may change which method is picked
+
+
+def unlock_question(name, unlock):
+    """'Check: needs X' with two buttons. RuneMetrics can't see this, so the player answers."""
+    ui.label(f"Check: needs {unlock['text']}").classes("muted small")
+    with ui.row().classes("gap-2"):
+        button("I have it", on_click=lambda: answer_and_redraw(name, unlock["id"], True)).props(
+            "unelevated no-caps").classes("chip")
+        button("I don't", on_click=lambda: answer_and_redraw(name, unlock["id"], False)).props(
+            "unelevated no-caps").classes("chip")
+
+
+def your_answers(name, answers):
+    """Every saved answer with a Change button, so a wrong tap can be undone."""
+    saved = [(uid, has_it) for uid, has_it in sorted(answers.items()) if uid in UNLOCK_TEXTS]
+    if not saved:
+        return
+    with panel():
+        ui.label("Your answers").classes("label green")
+        for uid, has_it in saved:
+            ui.label(f"{'You have' if has_it else 'You don’t have'}: {UNLOCK_TEXTS[uid]}").classes("muted small")
+            button("Change", on_click=lambda u=uid: answer_and_redraw(name, u, None)).props(
+                "unelevated no-caps").classes("btn-quiet")
 
 
 def active_plan(account, hours):

@@ -11,6 +11,10 @@ existing files; this one only draws it:
   plan_session.py  paths A, B and C (build_plan, path_lines)
   quest_path.py    quest chains and tonight's quest
   snapshots.py     saving an XP snapshot on every fetch
+  players.py       which player: folders, answers, the remembered player
+
+Choose a player on the /player screen (any public RuneScape name). Each name
+is fetched once while the app runs, and again only when you press Refresh.
 
 Start it (from the project folder):
     .venv/bin/python app.py
@@ -24,12 +28,15 @@ import datetime
 import re
 from pathlib import Path
 
+from fastapi.responses import RedirectResponse   # sends a page to /player when no player is chosen
 from nicegui import app, run, ui
 
 from account import LEVEL_XP, read_account
 from check_methods import load_methods, load_quest_files
 from plan_session import build_plan, path_lines
-from players import read_answers, read_current
+from players import (
+    check_name, folder_name, known_players, read_answers, read_current, save_answer, save_current,
+)
 from quest_path import difficulty_name, goal_progress, ranked_doable, skill_gaps, unlock_count
 from rs3_planner import (
     INVENTION_ID, SKILL_NAMES, XP_FOR_99_ELITE, XP_FOR_99_NORMAL,
@@ -40,7 +47,6 @@ from snapshots import save_snapshot
 HERE = Path(__file__).parent
 HOST = "127.0.0.1"   # this computer only - never 0.0.0.0
 PORT = 8080
-USERNAME = read_current()   # temporary until the player screen arrives
 BIG_GOAL_QUEST = "Plague's End"
 NO_VALUE = "—"       # shown when a value is missing; never a made-up number
 
@@ -58,37 +64,74 @@ METHODS = load_methods()
 UNLOCKS, QUESTS = load_quest_files()
 GOAL = next(u for u in UNLOCKS if u["final_quest"] == BIG_GOAL_QUEST)
 
-# Live account data, filled by refresh(). Fetched on start-up and on Refresh only.
-STATE = {"profile": None, "account": None, "fetched_at": None, "error": None}
+PASSWORD_NOTE = "Only your public RuneMetrics name. Never enter a password."
+IRONMAN_NOTE = ("Ironman accounts aren't supported yet. Plans may suggest training or "
+                "money methods an ironman can't use.")
+
+# Live account data, one entry per player, keyed by folder_name() so "hels glasglo"
+# and "Hels Glasglo" share one entry. Each name is fetched once while the app runs,
+# and again only on Refresh, so we don't hammer the unofficial RuneMetrics API.
+CACHE = {}
+
+# The player every screen shows. A dict so functions can change it without "global".
+# None until someone picks a player on the /player screen.
+CURRENT = {"name": read_current()}
 
 
 # ---------------------------------------------------------------------------
 # Fetching
 # ---------------------------------------------------------------------------
 
-def fetch_account():
+def blank_entry(name):
+    return {"name": name, "profile": None, "account": None, "fetched_at": None, "error": None}
+
+
+def fetch_account(name):
     """Fetch profile and quests with the existing step 1 functions."""
-    return load_profile(USERNAME), load_quests(USERNAME)
+    return load_profile(name), load_quests(name)
 
 
-async def refresh():
-    """Fetch from RuneMetrics, update STATE and save a snapshot. Returns True on success."""
+async def fetch_player(name):
+    """
+    Fetch one player from RuneMetrics into CACHE and save a snapshot.
+    Returns their cache entry. If the fetch fails, "error" says why and any
+    older stats are kept.
+    """
+    entry = CACHE.setdefault(folder_name(name), blank_entry(name))
+    # Shown in the terminal, handy for checking the cache works. flush=True writes it
+    # out straight away, even when the output goes to a log file instead of a terminal.
+    print(f"Fetching {name} from RuneMetrics", flush=True)
     try:
         # run.io_bound runs the slow download in the background so the page doesn't freeze.
-        result = await run.io_bound(fetch_account)
+        result = await run.io_bound(fetch_account, name)
     except SystemExit as err:
-        # The existing fetch code stops with a plain message on errors; show it instead.
-        STATE["error"] = str(err)
-        return False
+        # The existing fetch code stops with a plain message on errors; keep it to show.
+        entry["error"] = str(err)
+        return entry
     if result is None:   # the app is shutting down
-        return False
+        return entry
     profile, quest_data = result
     now = datetime.datetime.now()
-    STATE.update(profile=profile, account=read_account(profile, quest_data), fetched_at=now, error=None)
-    save_snapshot(USERNAME, profile, now)
-    return True
+    # RuneMetrics sends the name with its proper capitals; use that from now on.
+    entry.update(name=profile.get("name", name), profile=profile,
+                 account=read_account(profile, quest_data), fetched_at=now, error=None)
+    save_snapshot(entry["name"], profile, now)
+    return entry
 
-app.on_startup(refresh)
+
+def current_entry():
+    """The current player's cache entry (empty until fetched), or None if no player is chosen."""
+    name = CURRENT["name"]
+    if not name:
+        return None
+    return CACHE.setdefault(folder_name(name), blank_entry(name))
+
+
+async def fetch_current_on_startup():
+    if CURRENT["name"]:
+        await fetch_player(CURRENT["name"])
+
+app.on_startup(fetch_current_on_startup)
 
 
 # ---------------------------------------------------------------------------
@@ -167,22 +210,22 @@ def back_button(target):
     button("← Back", on_click=lambda: ui.navigate.to(target)).props("unelevated no-caps").classes("btn-quiet")
 
 
-def updated_text():
-    when = STATE["fetched_at"]
+def updated_text(entry):
+    when = entry["fetched_at"]
     return f"Stats updated {when:%H:%M}, {when.day} {when:%b}" if when else f"Stats updated {NO_VALUE}"
 
 
-def no_data_panel():
+def no_data_panel(entry):
     """Shown when there are no stats yet (e.g. RuneMetrics couldn't be reached)."""
     with panel():
         ui.label("No stats loaded").classes("heading")
-        ui.label(STATE["error"] or "RuneMetrics hasn't answered yet.").classes("muted")
+        ui.label(entry["error"] or "RuneMetrics hasn't answered yet.").classes("muted")
 
 
 async def on_refresh(button):
     button.disable()
     ui.notify("Fetching your stats from RuneMetrics…")
-    await refresh()
+    await fetch_player(CURRENT["name"])
     ui.navigate.reload()
 
 
@@ -192,22 +235,29 @@ async def on_refresh(button):
 
 @ui.page("/", title="RS3 Planner")
 def home_page():
+    entry = current_entry()
+    if entry is None:   # nobody chosen yet: go and pick a player
+        return RedirectResponse("/player")
+
     with ui.column().classes("page"):
         ui.label("RS3 Planner").classes("title")
-        ui.label(USERNAME).classes("subtitle")
         with ui.row().classes("row-line centered"):
-            ui.label(updated_text()).classes("muted")
+            ui.label(entry["name"]).classes("subtitle")
+            button("Switch player", on_click=lambda: ui.navigate.to("/player")).props(
+                "unelevated no-caps").classes("btn-quiet")
+        with ui.row().classes("row-line centered"):
+            ui.label(updated_text(entry)).classes("muted")
             refresh_button = button("Refresh").props("unelevated no-caps").classes("btn-quiet")
             refresh_button.on_click(lambda: on_refresh(refresh_button))
 
-        if STATE["error"] and STATE["account"]:
+        if entry["error"] and entry["account"]:
             with panel(crimson=True):
                 ui.label("Last refresh failed - showing older stats").classes("label")
-                ui.label(STATE["error"]).classes("muted")
+                ui.label(entry["error"]).classes("muted")
 
-        account, profile = STATE["account"], STATE["profile"]
+        account, profile = entry["account"], entry["profile"]
         if account is None:
-            no_data_panel()
+            no_data_panel(entry)
             bottom_nav("Home")
             return
 
@@ -255,6 +305,8 @@ def home_page():
 
 @ui.page("/play", title="Ready to play - RS3 Planner")
 def play_page():
+    if current_entry() is None:
+        return RedirectResponse("/player")
     choice = {"hours": DEFAULT_HOURS, "session": "afk", "minutes": DEFAULT_MINUTES}
 
     def pick(key, value):
@@ -316,25 +368,28 @@ def plan_page(hours: float = DEFAULT_HOURS, session: str = "afk", minutes: float
     hours = hours if hours > 0 else DEFAULT_HOURS
     minutes = minutes if minutes > 0 else DEFAULT_MINUTES
     session = session if session in ("afk", "active") else "afk"
+    if current_entry() is None:
+        return RedirectResponse("/player")
 
     with ui.column().classes("page"):
         back_button("/play")
-        account = STATE["account"]
-        if account is None:
-            no_data_panel()
+        entry = current_entry()
+        if entry["account"] is None:
+            no_data_panel(entry)
         elif session == "afk":
-            afk_plan(account, hours, minutes)
+            afk_plan(entry, hours, minutes)
         else:
-            active_plan(account, hours)
+            active_plan(entry["account"], hours)
     bottom_nav("")
 
 
-def afk_plan(account, hours, minutes):
+def afk_plan(entry, hours, minutes):
+    account = entry["account"]
     ui.label("Your AFK plan").classes("title")
     ui.label(f"{hours:g} hours · a click at most every {minutes:g} min").classes("muted")
 
     # The same function the terminal uses; a copy so each visit starts fresh.
-    plan = build_plan(copy.deepcopy(METHODS), account, minutes, read_answers(USERNAME))
+    plan = build_plan(copy.deepcopy(METHODS), account, minutes, read_answers(entry["name"]))
     for (letter, name), (_, method, why) in zip(PATH_NAMES, plan["paths"]):
         with panel():
             ui.label(f"{letter} · {name}").classes("label")
@@ -387,6 +442,68 @@ def active_plan(account, hours):
                 ui.label(f"{skill} {have} → {level}").classes("heading")
                 ui.label(f"{xp_left:,.0f} XP left").classes("muted")
             bar(account["skills"][skill]["xp"] / LEVEL_XP[level - 1], thin=True)
+
+
+# ---------------------------------------------------------------------------
+# Screen 0: choose a player
+# ---------------------------------------------------------------------------
+
+@ui.page("/player", title="Choose player - RS3 Planner")
+def player_page():
+    message = {"text": "", "error": False}
+
+    @ui.refreshable
+    def message_area():
+        if message["text"]:
+            with panel(crimson=message["error"]):
+                ui.label(message["text"]).classes("muted")
+
+    def show(text, error):
+        message.update(text=text, error=error)
+        message_area.refresh()
+
+    async def look_up(text):
+        name, problem = check_name(text)
+        if problem:   # caught here, before asking RuneMetrics anything
+            show(problem, error=True)
+            return
+        entry = CACHE.get(folder_name(name))
+        if entry is None or entry["account"] is None:   # not fetched yet this run
+            look_button.disable()
+            show(f"Fetching {name} from RuneMetrics…", error=False)
+            entry = await fetch_player(name)
+            look_button.enable()
+        if entry["account"] is None:
+            # Private, unknown, or no internet: say why and keep the current player.
+            show(entry["error"] or "RuneMetrics didn't answer. Try again.", error=True)
+            return
+        CURRENT["name"] = entry["name"]
+        save_current(entry["name"])
+        ui.navigate.to("/")
+
+    with ui.column().classes("page"):
+        if CURRENT["name"]:
+            back_button("/")
+        ui.label("Choose player").classes("title")
+        with panel():
+            ui.label("RuneScape name").classes("label")
+            name_box = ui.input(placeholder="Your RuneScape name").props("outlined dark").classes("name-input")
+            name_box.on("keydown.enter", lambda: look_up(name_box.value))
+            ui.label(PASSWORD_NOTE).classes("muted small")
+        message_area()
+        look_button = button("Look up", on_click=lambda: look_up(name_box.value)).props(
+            "unelevated no-caps").classes("btn-crimson")
+
+        names = known_players()
+        if names:
+            with panel():
+                ui.label("Recent players").classes("label green")
+                for name in names:
+                    current = CURRENT["name"] and folder_name(name) == folder_name(CURRENT["name"])
+                    button(name, on_click=lambda n=name: look_up(n)).props("unelevated no-caps").classes(
+                        "chip wide" + (" selected" if current else ""))
+
+        ui.label(IRONMAN_NOTE).classes("muted small")
 
 
 # ---------------------------------------------------------------------------

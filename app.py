@@ -399,4 +399,8 @@ CSS_VERSION = int((HERE / "static" / "app.css").stat().st_mtime)
 ui.add_head_html(f'<link rel="stylesheet" href="/static/app.css?v={CSS_VERSION}">', shared=True)
 
 if __name__ in {"__main__", "__mp_main__"}:
-    ui.run(host=HOST, port=PORT, title="RS3 Planner", dark=True, reload=False, show=False)
+    try:
+        ui.run(host=HOST, port=PORT, title="RS3 Planner", dark=True, reload=False, show=False)
+    except KeyboardInterrupt:
+        # Ctrl+C is the normal way to stop the app; say so instead of printing a traceback.
+        print("\nRS3 Planner stopped.")

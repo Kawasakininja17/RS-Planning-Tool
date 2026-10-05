@@ -12,6 +12,7 @@ existing files; this one only draws it:
   quest_path.py    quest chains and tonight's quest
   snapshots.py     saving an XP snapshot on every fetch
   players.py       which player: folders, answers, the remembered player
+  player_cache.py  the in-memory store of fetched players
 
 Choose a player on the /player screen (any public RuneScape name). Each name
 is fetched once while the app runs, and again only when you press Refresh.
@@ -31,16 +32,16 @@ from pathlib import Path
 from fastapi.responses import RedirectResponse   # sends a page to /player when no player is chosen
 from nicegui import app, run, ui
 
-from account import LEVEL_XP, read_account
+from account import LEVEL_XP
 from check_methods import load_methods, load_quest_files
 from plan_session import build_plan, path_lines
+from player_cache import entry_for, fetch_safely, needs_fetch, record_failure, record_success
 from players import (
     check_name, folder_name, known_players, read_answers, read_current, save_answer, save_current,
 )
 from quest_path import difficulty_name, goal_progress, ranked_doable, skill_gaps, unlock_count
 from rs3_planner import (
-    INVENTION_ID, SKILL_NAMES, XP_FOR_99_ELITE, XP_FOR_99_NORMAL,
-    load_profile, load_quests, xp_needed_for_99,
+    INVENTION_ID, SKILL_NAMES, XP_FOR_99_ELITE, XP_FOR_99_NORMAL, xp_needed_for_99,
 )
 from snapshots import save_snapshot
 
@@ -71,9 +72,8 @@ IRONMAN_NOTE = ("Ironman accounts aren't supported yet. Plans may suggest traini
 # Every unlock id in methods.json -> its wording, for the "Your answers" list.
 UNLOCK_TEXTS = {u["id"]: u["text"] for m in METHODS for u in m["requirements"]["unlocks"]}
 
-# Live account data, one entry per player, keyed by folder_name() so "hels glasglo"
-# and "Hels Glasglo" share one entry. Each name is fetched once while the app runs,
-# and again only on Refresh, so we don't hammer the unofficial RuneMetrics API.
+# Live account data, one entry per player (see player_cache.py). Each name is
+# fetched once while the app runs, and again only on Refresh.
 CACHE = {}
 
 # The player every screen shows. A dict so functions can change it without "global".
@@ -85,39 +85,24 @@ CURRENT = {"name": read_current()}
 # Fetching
 # ---------------------------------------------------------------------------
 
-def blank_entry(name):
-    return {"name": name, "profile": None, "account": None, "fetched_at": None, "error": None}
-
-
-def fetch_account(name):
-    """Fetch profile and quests with the existing step 1 functions."""
-    return load_profile(name), load_quests(name)
-
-
 async def fetch_player(name):
     """
     Fetch one player from RuneMetrics into CACHE and save a snapshot.
     Returns their cache entry. If the fetch fails, "error" says why and any
     older stats are kept.
     """
-    entry = CACHE.setdefault(folder_name(name), blank_entry(name))
     # Shown in the terminal, handy for checking the cache works. flush=True writes it
     # out straight away, even when the output goes to a log file instead of a terminal.
     print(f"Fetching {name} from RuneMetrics", flush=True)
-    try:
-        # run.io_bound runs the slow download in the background so the page doesn't freeze.
-        result = await run.io_bound(fetch_account, name)
-    except SystemExit as err:
-        # The existing fetch code stops with a plain message on errors; keep it to show.
-        entry["error"] = str(err)
-        return entry
+    # run.io_bound runs the slow download in the background so the page doesn't freeze.
+    result = await run.io_bound(fetch_safely, name)
     if result is None:   # the app is shutting down
-        return entry
-    profile, quest_data = result
+        return entry_for(CACHE, name)
+    profile, account, error = result
+    if error:
+        return record_failure(CACHE, name, error)
     now = datetime.datetime.now()
-    # RuneMetrics sends the name with its proper capitals; use that from now on.
-    entry.update(name=profile.get("name", name), profile=profile,
-                 account=read_account(profile, quest_data), fetched_at=now, error=None)
+    entry = record_success(CACHE, name, profile, account, now)
     save_snapshot(entry["name"], profile, now)
     return entry
 
@@ -127,7 +112,7 @@ def current_entry():
     name = CURRENT["name"]
     if not name:
         return None
-    return CACHE.setdefault(folder_name(name), blank_entry(name))
+    return entry_for(CACHE, name)
 
 
 async def fetch_current_on_startup():
@@ -505,17 +490,26 @@ def player_page():
         message.update(text=text, error=error)
         message_area.refresh()
 
+    busy = {"now": False}   # True while a lookup is running
+
     async def look_up(text):
+        if busy["now"]:   # a second tap or Enter while fetching: ignore it, one fetch is enough
+            return
         name, problem = check_name(text)
         if problem:   # caught here, before asking RuneMetrics anything
             show(problem, error=True)
             return
-        entry = CACHE.get(folder_name(name))
-        if entry is None or entry["account"] is None:   # not fetched yet this run
+        if needs_fetch(CACHE, name):   # not fetched yet this run
+            busy["now"] = True
             look_button.disable()
             show(f"Fetching {name} from RuneMetrics…", error=False)
-            entry = await fetch_player(name)
-            look_button.enable()
+            try:
+                entry = await fetch_player(name)
+            finally:   # whatever happens, the screen must not stay stuck on "Fetching…"
+                busy["now"] = False
+                look_button.enable()
+        else:
+            entry = entry_for(CACHE, name)
         if entry["account"] is None:
             # Private, unknown, or no internet: say why and keep the current player.
             show(entry["error"] or "RuneMetrics didn't answer. Try again.", error=True)

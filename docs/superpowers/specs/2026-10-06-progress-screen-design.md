@@ -153,16 +153,18 @@ Builds the `ui.echart` settings for both charts. `points` is `[(date, value)]`;
 - **Date axis** (ECharts `type: "time"`), so missing days show as gaps with true spacing.
   Each date is sent as a local noon time string ("2026-10-05T12:00:00") so the browser's
   time zone can't shift it to the previous day.
-- **Value axis zooms to the data** (`scale: true`); axis labels shortened in the browser
-  ("269.3M", "723k").
+- **Value axis zooms to the data** (`scale: true`); axis labels are whole numbers with
+  commas ("269,276,000"). (Not shortened to "269.3M": on a zoomed axis the ticks are close
+  together, so a shortened label would repeat on every tick.)
 - **Marks:** 2px line in glacial `#A8DCEB`, 8px dot markers with a 2px ring in the panel
   colour `#16241B`; no area fill; no legend (one line; the panel label names it).
 - **Chrome:** transparent background (the panel shows through); axis text muted `#B9C3B2`
   in Alegreya (bundled font); gridlines solid 1px `#2E4636`; no toolbar.
 - **Tooltip** on hover: "5 Oct · 269,276,641 to go"; background `#16241B`, border `#2E4636`,
   text parchment `#F0E8D6`.
-- Two small JavaScript formatters (number shortening, tooltip text) are passed as strings
-  in the settings, NiceGUI's documented way (a key starting with ":"). Each is commented.
+- Three small JavaScript formatters (date labels "5 Oct", value labels with commas, tooltip
+  text) are passed as strings in the settings, NiceGUI's documented way (a key starting
+  with ":"). Each is commented.
 
 ### `static/app.css`
 

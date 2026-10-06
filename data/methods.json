@@ -90,7 +90,7 @@
       "unverified": [],
       "source_url": "https://runescape.wiki/w/Money_making_guide/Smelting_elder_rune_bars",
       "checked_date": "2026-10-04",
-      "notes": "At level 90 the guide gives 1,200 bars/hr and 180 seconds per batch (3 minutes between clicks). 26 XP per bar (Elder rune bar page) x 1,200 = 31,200 XP/hr. Speeds up at 91 (1,500/hr) and 94 (2,000/hr); bonus bars start at 92. The guide's 5.75M/hr profit assumes 94+ with Superheat Form; by the guide's own prices this is roughly break-even at 90, so no gp figure is given. SPEC.md said about 1,300 bars and 35k XP, slightly higher than the wiki."
+      "notes": "At level 90 the guide gives 1,200 bars/hr and 180 seconds per batch (3 minutes between clicks). 26 XP per bar (Elder rune bar page) x 1,200 = 31,200 XP/hr. The guide's speeds: 5 ticks/bar at 90 (1,200/hr), 4 ticks at 91-93 (1,500/hr), 3 ticks at 94+ (2,000/hr), 2 ticks at 94+ with Superheat Form (3,000/hr; Superheat Form needs Prayer 91 and The Light Within). Bonus bars start at 92. The Pay-to-play Smithing training page's 78,000 XP/hr is that top speed (3,000 x 26), not a different XP per bar (checked 2026-10-06). The guide's own 84,000 XP figure isn't explained by its page text, so it isn't used. The guide's profit assumes 94+ with Superheat Form; by the guide's own prices this is roughly break-even at 90, so no gp figure is given. SPEC.md said about 1,300 bars and 35k XP, slightly higher than the wiki."
     },
     {
       "type": "training",
@@ -552,7 +552,7 @@
       "unverified": [],
       "source_url": "https://runescape.wiki/w/Pay-to-play_Mining_training",
       "checked_date": "2026-10-05",
-      "notes": "Wiki summary row '80-90 Banite 104,520 84,240'. Low = Semi-AFK (click a rock when the stamina bar is about to deplete), high = AFK + Rockertunities. Baseline rates with the best pickaxe for the tier. Wiki: 'The Pirates' Hideout mine ... has no requirements to access' (Wilderness level 54). Other mines need Ritual of the Mahjarrat, Hero's Welcome or elite Fremennik achievements. The wiki gives no click time."
+      "notes": "Wiki summary row '80-90 Banite 104,520 84,240'. Low = Semi-AFK (click a rock when the stamina bar is about to deplete), high = AFK + Rockertunities. Baseline rates with the best pickaxe for the tier. Wiki: 'The Pirates' Hideout mine ... has no requirements to access' (Wilderness level 54). Other mines need Ritual of the Mahjarrat, Hero's Welcome or elite Fremennik achievements. The wiki gives no click time. The same page contradicts itself: its section heading says 'Levels 80-89: Banite', while the summary row used here says 80-90 (checked 2026-10-06)."
     },
     {
       "type": "training",
@@ -1144,7 +1144,7 @@
         "unlocks": []
       },
       "unverified": [],
-      "source_url": "https://runescape.wiki/w/Pay-to-play_Construction_training",
+      "source_url": "https://runescape.wiki/w/Construction_training",
       "checked_date": "2026-10-05",
       "notes": "Wiki: Fort Forinthry is 'An extremely AFK (albeit expensive) method'; 'completing a project with 840 progress would take between 18–25 minutes ... No interaction at all is required'. Baseline XP 'assumes the player has 0% Perfect Build and never interacts with optimal Construction hotspots'. Band: this row's level to the next step's level minus 1. Row: Workshop T1, baseline 28,800 XP/hour, baseline cost −76.8 coins per XP (GE prices). The wiki gives no click time."
     },
@@ -1166,7 +1166,7 @@
         "unlocks": []
       },
       "unverified": [],
-      "source_url": "https://runescape.wiki/w/Pay-to-play_Construction_training",
+      "source_url": "https://runescape.wiki/w/Construction_training",
       "checked_date": "2026-10-05",
       "notes": "Wiki: Fort Forinthry is 'An extremely AFK (albeit expensive) method'; 'completing a project with 840 progress would take between 18–25 minutes ... No interaction at all is required'. Baseline XP 'assumes the player has 0% Perfect Build and never interacts with optimal Construction hotspots'. Band: this row's level to the next step's level minus 1. Row: Town Hall T1, baseline 43,200 XP/hour, baseline cost −91.66 coins per XP (GE prices). The wiki gives no click time."
     },
@@ -1188,7 +1188,7 @@
         "unlocks": []
       },
       "unverified": [],
-      "source_url": "https://runescape.wiki/w/Pay-to-play_Construction_training",
+      "source_url": "https://runescape.wiki/w/Construction_training",
       "checked_date": "2026-10-05",
       "notes": "Wiki: Fort Forinthry is 'An extremely AFK (albeit expensive) method'; 'completing a project with 840 progress would take between 18–25 minutes ... No interaction at all is required'. Baseline XP 'assumes the player has 0% Perfect Build and never interacts with optimal Construction hotspots'. Band: this row's level to the next step's level minus 1. Row: Kitchen T1, baseline 62,400 XP/hour, baseline cost −90.86 coins per XP (GE prices). The wiki gives no click time."
     },
@@ -1210,7 +1210,7 @@
         "unlocks": []
       },
       "unverified": [],
-      "source_url": "https://runescape.wiki/w/Pay-to-play_Construction_training",
+      "source_url": "https://runescape.wiki/w/Construction_training",
       "checked_date": "2026-10-05",
       "notes": "Wiki: Fort Forinthry is 'An extremely AFK (albeit expensive) method'; 'completing a project with 840 progress would take between 18–25 minutes ... No interaction at all is required'. Baseline XP 'assumes the player has 0% Perfect Build and never interacts with optimal Construction hotspots'. Band: this row's level to the next step's level minus 1. Row: Workshop T2, baseline 96,000 XP/hour, baseline cost −29.44 coins per XP (GE prices). The wiki gives no click time."
     },
@@ -1232,7 +1232,7 @@
         "unlocks": []
       },
       "unverified": [],
-      "source_url": "https://runescape.wiki/w/Pay-to-play_Construction_training",
+      "source_url": "https://runescape.wiki/w/Construction_training",
       "checked_date": "2026-10-05",
       "notes": "Wiki: Fort Forinthry is 'An extremely AFK (albeit expensive) method'; 'completing a project with 840 progress would take between 18–25 minutes ... No interaction at all is required'. Baseline XP 'assumes the player has 0% Perfect Build and never interacts with optimal Construction hotspots'. Band: this row's level to the next step's level minus 1. Row: Guardhouse T1, baseline 128,000 XP/hour, baseline cost −23.03 coins per XP (GE prices). The wiki gives no click time."
     },
@@ -1254,7 +1254,7 @@
         "unlocks": []
       },
       "unverified": [],
-      "source_url": "https://runescape.wiki/w/Pay-to-play_Construction_training",
+      "source_url": "https://runescape.wiki/w/Construction_training",
       "checked_date": "2026-10-05",
       "notes": "Wiki: Fort Forinthry is 'An extremely AFK (albeit expensive) method'; 'completing a project with 840 progress would take between 18–25 minutes ... No interaction at all is required'. Baseline XP 'assumes the player has 0% Perfect Build and never interacts with optimal Construction hotspots'. Band: this row's level to the next step's level minus 1. Row: Ranger's Workroom T1, baseline 165,333 XP/hour, baseline cost −31.75 coins per XP (GE prices). The wiki gives no click time."
     },
@@ -1276,7 +1276,7 @@
         "unlocks": []
       },
       "unverified": [],
-      "source_url": "https://runescape.wiki/w/Pay-to-play_Construction_training",
+      "source_url": "https://runescape.wiki/w/Construction_training",
       "checked_date": "2026-10-05",
       "notes": "Wiki: Fort Forinthry is 'An extremely AFK (albeit expensive) method'; 'completing a project with 840 progress would take between 18–25 minutes ... No interaction at all is required'. Baseline XP 'assumes the player has 0% Perfect Build and never interacts with optimal Construction hotspots'. Band: this row's level to the next step's level minus 1. Row: Grove T3, baseline 234,000 XP/hour, baseline cost −21.58 coins per XP (GE prices). The wiki gives no click time."
     },
@@ -1298,7 +1298,7 @@
         "unlocks": []
       },
       "unverified": [],
-      "source_url": "https://runescape.wiki/w/Pay-to-play_Construction_training",
+      "source_url": "https://runescape.wiki/w/Construction_training",
       "checked_date": "2026-10-05",
       "notes": "Wiki: Fort Forinthry is 'An extremely AFK (albeit expensive) method'; 'completing a project with 840 progress would take between 18–25 minutes ... No interaction at all is required'. Baseline XP 'assumes the player has 0% Perfect Build and never interacts with optimal Construction hotspots'. Band: this row's level to the next step's level minus 1. Row: Command Centre T2, baseline 288,000 XP/hour, baseline cost −24.16 coins per XP (GE prices). The wiki gives no click time."
     },
@@ -1320,7 +1320,7 @@
         "unlocks": []
       },
       "unverified": [],
-      "source_url": "https://runescape.wiki/w/Pay-to-play_Construction_training",
+      "source_url": "https://runescape.wiki/w/Construction_training",
       "checked_date": "2026-10-05",
       "notes": "Wiki: Fort Forinthry is 'An extremely AFK (albeit expensive) method'; 'completing a project with 840 progress would take between 18–25 minutes ... No interaction at all is required'. Baseline XP 'assumes the player has 0% Perfect Build and never interacts with optimal Construction hotspots'. Band: this row's level to the next step's level minus 1. Row: Town Hall T3, baseline 397,714 XP/hour, baseline cost −18.09 coins per XP (GE prices). The wiki gives no click time."
     },
@@ -1342,7 +1342,7 @@
         "unlocks": []
       },
       "unverified": [],
-      "source_url": "https://runescape.wiki/w/Pay-to-play_Construction_training",
+      "source_url": "https://runescape.wiki/w/Construction_training",
       "checked_date": "2026-10-05",
       "notes": "Wiki: Fort Forinthry is 'An extremely AFK (albeit expensive) method'; 'completing a project with 840 progress would take between 18–25 minutes ... No interaction at all is required'. Baseline XP 'assumes the player has 0% Perfect Build and never interacts with optimal Construction hotspots'. Band: this row's level to the next step's level minus 1. Row: Chapel T3, baseline 552,000 XP/hour, baseline cost −41.79 coins per XP (GE prices). The wiki gives no click time."
     },
@@ -1364,7 +1364,7 @@
         "unlocks": []
       },
       "unverified": ["Idealised base rate: 2,000 successful pickpockets per hour, without banking, failures or time spent refreshing buffs"],
-      "source_url": "https://runescape.wiki/w/Pay-to-play_Thieving_training",
+      "source_url": "https://runescape.wiki/w/Thieving_training",
       "checked_date": "2026-10-05",
       "notes": "Wiki: 'Pickpocketing is a low-intensity training method in which the player automatically repeats the pickpocket action until they are caught, their inventory becomes full, or they stop'. Band: this target's level to the next listed target's level minus 1. Table: level 1, base XP/hr 16,000. The wiki gives no click time."
     },
@@ -1386,7 +1386,7 @@
         "unlocks": []
       },
       "unverified": ["Idealised base rate: 2,000 successful pickpockets per hour, without banking, failures or time spent refreshing buffs"],
-      "source_url": "https://runescape.wiki/w/Pay-to-play_Thieving_training",
+      "source_url": "https://runescape.wiki/w/Thieving_training",
       "checked_date": "2026-10-05",
       "notes": "Wiki: 'Pickpocketing is a low-intensity training method in which the player automatically repeats the pickpocket action until they are caught, their inventory becomes full, or they stop'. Band: this target's level to the next listed target's level minus 1. Table: level 10, base XP/hr 29,000. The wiki gives no click time."
     },
@@ -1408,7 +1408,7 @@
         "unlocks": []
       },
       "unverified": ["Idealised base rate: 2,000 successful pickpockets per hour, without banking, failures or time spent refreshing buffs"],
-      "source_url": "https://runescape.wiki/w/Pay-to-play_Thieving_training",
+      "source_url": "https://runescape.wiki/w/Thieving_training",
       "checked_date": "2026-10-05",
       "notes": "Wiki: 'Pickpocketing is a low-intensity training method in which the player automatically repeats the pickpocket action until they are caught, their inventory becomes full, or they stop'. Band: this target's level to the next listed target's level minus 1. Table: level 15, base XP/hr 44,400. The wiki gives no click time."
     },
@@ -1430,7 +1430,7 @@
         "unlocks": []
       },
       "unverified": ["Idealised base rate: 2,000 successful pickpockets per hour, without banking, failures or time spent refreshing buffs"],
-      "source_url": "https://runescape.wiki/w/Pay-to-play_Thieving_training",
+      "source_url": "https://runescape.wiki/w/Thieving_training",
       "checked_date": "2026-10-05",
       "notes": "Wiki: 'Pickpocketing is a low-intensity training method in which the player automatically repeats the pickpocket action until they are caught, their inventory becomes full, or they stop'. Band: this target's level to the next listed target's level minus 1. Table: level 25, base XP/hr 52,000. The wiki gives no click time."
     },
@@ -1452,7 +1452,7 @@
         "unlocks": []
       },
       "unverified": ["Idealised base rate: 2,000 successful pickpockets per hour, without banking, failures or time spent refreshing buffs"],
-      "source_url": "https://runescape.wiki/w/Pay-to-play_Thieving_training",
+      "source_url": "https://runescape.wiki/w/Thieving_training",
       "checked_date": "2026-10-05",
       "notes": "Wiki: 'Pickpocketing is a low-intensity training method in which the player automatically repeats the pickpocket action until they are caught, their inventory becomes full, or they stop'. Band: this target's level to the next listed target's level minus 1. Table: level 40, base XP/hr 93,600. The wiki gives no click time."
     },
@@ -1474,7 +1474,7 @@
         "unlocks": []
       },
       "unverified": ["Idealised base rate: 2,000 successful pickpockets per hour, without banking, failures or time spent refreshing buffs"],
-      "source_url": "https://runescape.wiki/w/Pay-to-play_Thieving_training",
+      "source_url": "https://runescape.wiki/w/Thieving_training",
       "checked_date": "2026-10-05",
       "notes": "Wiki: 'Pickpocketing is a low-intensity training method in which the player automatically repeats the pickpocket action until they are caught, their inventory becomes full, or they stop'. Band: this target's level to the next listed target's level minus 1. Table: level 42, base XP/hr 116,000. Wiki: 'the inventory may fill without a Thieving cape or regular banking.' The wiki gives no click time."
     },
@@ -1496,7 +1496,7 @@
         "unlocks": []
       },
       "unverified": ["Idealised base rate: 2,000 successful pickpockets per hour, without banking, failures or time spent refreshing buffs"],
-      "source_url": "https://runescape.wiki/w/Pay-to-play_Thieving_training",
+      "source_url": "https://runescape.wiki/w/Thieving_training",
       "checked_date": "2026-10-05",
       "notes": "Wiki: 'Pickpocketing is a low-intensity training method in which the player automatically repeats the pickpocket action until they are caught, their inventory becomes full, or they stop'. Band: this target's level to the next listed target's level minus 1. Table: level 45, base XP/hr 130,000. The wiki gives no click time."
     },
@@ -1518,7 +1518,7 @@
         "unlocks": []
       },
       "unverified": ["Idealised base rate: 2,000 successful pickpockets per hour, without banking, failures or time spent refreshing buffs"],
-      "source_url": "https://runescape.wiki/w/Pay-to-play_Thieving_training",
+      "source_url": "https://runescape.wiki/w/Thieving_training",
       "checked_date": "2026-10-05",
       "notes": "Wiki: 'Pickpocketing is a low-intensity training method in which the player automatically repeats the pickpocket action until they are caught, their inventory becomes full, or they stop'. Band: this target's level to the next listed target's level minus 1. Table: level 50, base XP/hr 150,000. Wiki: 'the inventory may fill without a Thieving cape or regular banking.' The wiki gives no click time."
     },
@@ -1540,7 +1540,7 @@
         "unlocks": []
       },
       "unverified": ["Idealised base rate: 2,000 successful pickpockets per hour, without banking, failures or time spent refreshing buffs"],
-      "source_url": "https://runescape.wiki/w/Pay-to-play_Thieving_training",
+      "source_url": "https://runescape.wiki/w/Thieving_training",
       "checked_date": "2026-10-05",
       "notes": "Wiki: 'Pickpocketing is a low-intensity training method in which the player automatically repeats the pickpocket action until they are caught, their inventory becomes full, or they stop'. Band: this target's level to the next listed target's level minus 1. Table: level 53, base XP/hr 158,800. The wiki gives no click time."
     },
@@ -1562,7 +1562,7 @@
         "unlocks": []
       },
       "unverified": ["Idealised base rate: 2,000 successful pickpockets per hour, without banking, failures or time spent refreshing buffs"],
-      "source_url": "https://runescape.wiki/w/Pay-to-play_Thieving_training",
+      "source_url": "https://runescape.wiki/w/Thieving_training",
       "checked_date": "2026-10-05",
       "notes": "Wiki: 'Pickpocketing is a low-intensity training method in which the player automatically repeats the pickpocket action until they are caught, their inventory becomes full, or they stop'. Band: this target's level to the next listed target's level minus 1. Table: level 55, base XP/hr 168,600. Wiki: 'simple stackable loot'. The wiki gives no click time."
     },

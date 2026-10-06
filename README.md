@@ -179,6 +179,13 @@ to `max_level`): the levels the wiki's rates were quoted for. Once you're past
 a method's band in every skill it trains, the planner lists it under "Ruled out"
 (in the app: **Why not the others?**) as "you've outgrown this".
 
+How the band edges were set: where the wiki writes level ranges (Mining,
+smelting bars, bonfires), they're copied as written, so neighbouring methods
+share an edge level (iron 10–20, coal 20–30) and at that level both are offered;
+the faster one wins. Where the wiki gives only a starting level (Fort Forinthry
+buildings, pickpocketing targets), each band ends one level before the next
+listed method starts. `max_level` itself still counts as inside the band.
+
 ## Planning a session
 
 ```bash

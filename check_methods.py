@@ -94,7 +94,11 @@ def check_method(method, position):
                 problems.append(f"{label}: unknown skill '{skill}'")
 
     # 4. Levels. min_level is where the method starts; max_level is the top of the
-    #    level band the wiki's rates were quoted for (null = no upper limit).
+    #    level band the wiki's rates were quoted for (null = no upper limit), and
+    #    still counts as inside it. Where the wiki writes ranges (Mining, smelting,
+    #    bonfires) they're copied as written, so neighbours share an edge level and
+    #    both are offered there. Where it gives only starting levels (Fort Forinthry,
+    #    pickpocketing), each band ends one level before the next method starts.
     if not is_whole_number(method["min_level"]) or not 1 <= method["min_level"] <= 120:
         problems.append(f"{label}: min_level must be a whole number from 1 to 120")
     top = method["max_level"]

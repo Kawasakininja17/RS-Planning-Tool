@@ -9,6 +9,8 @@ in your web browser. Give it a public RuneScape name and it shows:
 - **Skills:** all 29 skills with level, XP and XP left to 99, closest first.
 - **Quests:** a big goal (like Prifddinas) with its whole quest chain, the
   skills you're still short, and the quests you can start right now.
+- **Progress:** max cape progress over time, XP gained lately, and any skill's
+  XP per day.
 
 It only reads public data (RuneMetrics and the RuneScape Wiki). It never
 touches or controls the game client, and it never asks for a password.
@@ -117,6 +119,13 @@ With a ZIP, download it again.
    quest, other requirements to check yourself, the quests you can start now
    (**Show all** for the full list) and the ones in progress. **Change goal**
    picks a different big goal.
+8. **Progress** (bottom bar): how you're closing on max cape, from the stats
+   snapshots saved each time stats are fetched. It shows your max cape % and the
+   XP still to go (with a chart, one point per day, once you have two days),
+   **Gained** today, over the last 7 days and since your first snapshot (with the
+   skills that moved), and **One skill**: pick any skill to see its XP per day.
+   **Show the numbers** lists the values behind a chart. Progress never fetches;
+   it works from the saved files.
 
 **Good to know**
 
@@ -125,8 +134,8 @@ With a ZIP, download it again.
 - Each player is fetched from RuneMetrics once while the app runs, and again only
   when you press **Refresh**.
 - Your answers, chosen goal and stat snapshots stay on your computer, in
-  `data/players/<player>/` (never uploaded; kept out of git). Snapshots are kept
-  for a future Progress screen.
+  `data/players/<player>/` (never uploaded; kept out of git). The snapshots are
+  what the Progress screen charts.
 - Fonts (Uncial Antiqua, Cinzel, Alegreya; SIL Open Font License) and icons
   (Lucide; ISC licence) are bundled in `static/`, with their licences.
 

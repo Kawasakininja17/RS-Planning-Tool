@@ -147,6 +147,18 @@ body { font-family: "Alegreya", Georgia, serif; font-size: 17px; line-height: 1.
 .name-input .q-field__native::placeholder { color: var(--muted); opacity: 1; }
 .name-input .q-field__control:before { border-color: var(--frame-outer) !important; }
 
+/* Progress charts: the height includes the axis labels, so no scrollbar appears inside a panel. */
+.chart { width: 100%; height: 220px; }
+
+/* The skill dropdown on Progress: the same dark box as the name input on Choose player. */
+.skill-select { width: 100%; }
+.skill-select .q-field__control { background: var(--forest); border-radius: 10px; min-height: 48px; color: var(--glacial) !important; }
+.skill-select .q-field__native { color: var(--parchment); font-family: "Alegreya", Georgia, serif; font-size: 17px; }
+.skill-select .q-field__control:before { border-color: var(--frame-outer) !important; }
+/* Its list of skills when opened. */
+.skill-menu { background: var(--panel); color: var(--parchment); border: 1px solid var(--frame-outer); }
+.skill-menu .q-item { min-height: 44px; font-family: "Alegreya", Georgia, serif; }
+
 /* A chip as wide as its panel, text on the left (recent players list). */
 .q-btn.chip.wide { width: 100%; }
 .q-btn.chip.wide .q-btn__content { justify-content: flex-start; }

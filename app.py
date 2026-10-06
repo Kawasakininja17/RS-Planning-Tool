@@ -37,7 +37,10 @@ from account import LEVEL_XP, skill_rows
 from check_methods import load_methods, load_quest_files
 from plan_session import also_text, build_plan, path_lines, split_ruled_out
 from player_cache import entry_for, fetch_safely, needs_fetch, record_failure, record_success
-from progress import gain_lines, max_cape_xp, read_snapshots, signed_xp, since_text, skills_moved
+from progress import (
+    default_skill, gain_lines, max_cape_points, max_cape_xp, read_snapshots, signed_xp, since_text,
+    skill_gain_since_first, skill_order, skill_points, skills_moved,
+)
 from players import (
     check_name, folder_name, known_players, read_answers, read_current, save_answer, save_current,
 )
@@ -618,6 +621,7 @@ def progress_page():
 
         max_cape_panel(snapshots)
         gained_panel(snapshots, today)
+        one_skill_panel(entry, snapshots, today)
 
     bottom_nav("Progress")
 
@@ -635,8 +639,106 @@ def skipped_text(skipped):
     return f"{skipped} snapshot files couldn't be read and were skipped."
 
 
+# Chart colours: the same values as static/app.css. ECharts draws on a canvas,
+# which can't read CSS, so they are written out here.
+CHART_PANEL = "#16241B"     # --panel: the dots' ring and the tooltip background
+CHART_GRID = "#2E4636"      # --frame-outer: gridlines and the date axis
+CHART_TEXT = "#B9C3B2"      # --muted: axis labels
+CHART_TIP_TEXT = "#F0E8D6"  # --parchment: tooltip text
+CHART_LINE = "#A8DCEB"      # --glacial: the line and its dots
+CHART_FONT = "Alegreya, Georgia, serif"
+ONE_DAY_MS = 24 * 60 * 60 * 1000   # one day in milliseconds, how ECharts measures time
+
+# Small pieces of browser code (JavaScript) for ECharts. NiceGUI runs a settings
+# value as code when its key starts with ":" (see ui.echart's documentation).
+MONTHS_JS = "['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']"
+# Date axis labels: "5 Oct".
+DATE_LABEL_JS = f"value => {{ const d = new Date(value); return d.getDate() + ' ' + {MONTHS_JS}[d.getMonth()]; }}"
+# Value axis labels: whole numbers with commas, "269,276,000".
+NUMBER_LABEL_JS = "value => Math.round(value).toLocaleString('en-GB')"
+
+
+def tooltip_js(value_word):
+    """Hover text, '5 Oct · 269,276,641 to go'. value_word is our own fixed text ('to go' or 'XP')."""
+    return ("params => { const p = params[0]; const d = new Date(p.value[0]); "
+            f"return d.getDate() + ' ' + {MONTHS_JS}[d.getMonth()] + ' · ' + "
+            f"Math.round(p.value[1]).toLocaleString('en-GB') + ' {value_word}'; }}")
+
+
+def line_chart(points, value_word):
+    """
+    A one-line chart of [(date, value)] in the app's colours (ui.echart: ECharts,
+    bundled with NiceGUI, so it works offline). One line, so no legend: the panel's
+    label says what it is. The date axis keeps real spacing, so a week without
+    snapshots shows as a gap. The value axis zooms to the data, or a small change
+    on 269M would be invisible.
+    """
+    # Each date at local midnight, where ECharts puts its day labels, so every dot
+    # sits on its own date. The time is written out ("T00:00:00", no time zone) so
+    # the browser reads it as local time; a bare "2026-10-05" could be read as UTC
+    # and land on the day before.
+    data = [[f"{day:%Y-%m-%d}T00:00:00", value] for day, value in points]
+    options = {
+        "backgroundColor": "transparent",   # the panel shows through
+        "animation": False,
+        "textStyle": {"fontFamily": CHART_FONT, "color": CHART_TEXT},
+        "grid": {"left": 8, "right": 16, "top": 16, "bottom": 8, "containLabel": True},
+        "xAxis": {
+            "type": "time",
+            "minInterval": ONE_DAY_MS,   # never two labels on the same day
+            "axisLine": {"lineStyle": {"color": CHART_GRID}},
+            "axisTick": {"show": False},
+            "splitLine": {"show": False},
+            "axisLabel": {"color": CHART_TEXT, "hideOverlap": True, ":formatter": DATE_LABEL_JS},
+        },
+        "yAxis": {
+            "type": "value",
+            "scale": True,   # zoom to the data instead of starting at 0
+            "splitLine": {"lineStyle": {"color": CHART_GRID, "width": 1, "type": "solid"}},
+            "axisLabel": {"color": CHART_TEXT, ":formatter": NUMBER_LABEL_JS},
+        },
+        "tooltip": {
+            "trigger": "axis",
+            "backgroundColor": CHART_PANEL,
+            "borderColor": CHART_GRID,
+            "textStyle": {"color": CHART_TIP_TEXT, "fontFamily": CHART_FONT},
+            "axisPointer": {"type": "line", "lineStyle": {"color": CHART_GRID}},
+            ":formatter": tooltip_js(value_word),
+        },
+        "series": [{
+            "type": "line",
+            "data": data,
+            "symbol": "circle",
+            "symbolSize": 8,
+            "clip": False,   # dots at the very ends stay whole
+            "lineStyle": {"color": CHART_LINE, "width": 2},
+            "itemStyle": {"color": CHART_LINE, "borderColor": CHART_PANEL, "borderWidth": 2},
+        }],
+    }
+    return ui.echart(options).classes("chart")
+
+
+def numbers_toggle(points, value_word):
+    """'Show the numbers': the chart's values as a list, newest first (nothing is fetched)."""
+    show_text = "Show the numbers"
+    toggle = button(show_text).props("unelevated no-caps").classes("btn-quiet")
+    # Drawn now but hidden; the button shows or hides it.
+    numbers = ui.column().classes("w-full gap-0")
+    with numbers:
+        for day, value in reversed(points):
+            ui.label(f"{day.day} {day:%b} · {value:,.0f} {value_word}").classes("muted small")
+    numbers.set_visibility(False)
+
+    def flip():
+        showing = not numbers.visible
+        numbers.set_visibility(showing)
+        toggle.set_text("Hide the numbers" if showing else show_text)
+
+    toggle.on_click(flip)
+
+
 def max_cape_panel(snapshots):
-    """Max cape now, from the newest snapshot (the same rule as Home's card)."""
+    """Max cape now (the same rule as Home's card), and XP still to go per day."""
     newest = snapshots[-1]
     cape = max_cape_xp(newest["skills"])   # None if the snapshot lacks a skill
     with panel():
@@ -644,6 +746,12 @@ def max_cape_panel(snapshots):
         ui.label(f"{cape['percent']:.1f}%" if cape else NO_VALUE).classes("big-number")
         ui.label(f"{cape['to_go']:,.0f} XP to go" if cape else f"{NO_VALUE} XP to go").classes("heading")
         ui.label(f"Total XP {newest['total_xp']:,.0f}").classes("muted")
+        points = max_cape_points(snapshots)   # the last snapshot of each day
+        if len(points) >= 2:   # a line needs two points
+            line_chart(points, "to go")
+            numbers_toggle(points, "to go")
+        else:
+            ui.label("A chart appears once you have snapshots from 2 different days.").classes("muted small")
 
 
 def gained_panel(snapshots, today):
@@ -673,6 +781,44 @@ def gained_panel(snapshots, today):
             with ui.row().classes("row-line"):
                 ui.label(skill).classes("heading")
                 ui.label(f"{signed_xp(xp)} XP").classes("muted")
+
+
+def one_skill_panel(entry, snapshots, today):
+    """A dropdown of skills and the chosen skill's XP per day. Choosing redraws only this panel."""
+    newest = snapshots[-1]["skills"]
+    names = skill_order(newest)   # closest to 99 first, like the Skills screen
+    if not names:
+        return
+    # Levels come from the live stats (skill_rows knows Invention past 99 is "99+");
+    # snapshots don't store levels. With no live stats, the level is left off.
+    levels = {row["name"]: row["level_text"] for row in skill_rows(entry["account"])} if entry["account"] else {}
+    choice = {"skill": default_skill(snapshots, today)}
+
+    @ui.refreshable
+    def skill_view():
+        skill = choice["skill"]
+        name_text = f"{skill} {levels[skill]}" if skill in levels else skill
+        ui.label(f"{name_text} · {newest[skill]:,.0f} XP").classes("heading")
+        points = skill_points(snapshots, skill)
+        if len(points) >= 2:
+            line_chart(points, "XP")
+            numbers_toggle(points, "XP")
+        elif len(snapshots) < 2:
+            ui.label("Only one snapshot so far.").classes("muted")
+        else:
+            gain = skill_gain_since_first(snapshots, skill)
+            gain_text = NO_VALUE if gain is None else signed_xp(gain)
+            ui.label(f"{gain_text} XP {since_text(snapshots[0]['when'], today)}").classes("muted")
+
+    def pick(event):
+        choice["skill"] = event.value
+        skill_view.refresh()
+
+    with panel():
+        ui.label("One skill").classes("label")
+        ui.select(names, value=choice["skill"], on_change=pick).props(
+            'outlined dark popup-content-class="skill-menu"').classes("skill-select")
+        skill_view()
 
 
 # ---------------------------------------------------------------------------

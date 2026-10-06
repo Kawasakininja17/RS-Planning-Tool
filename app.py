@@ -11,6 +11,7 @@ existing files; this one only draws it:
   plan_session.py  paths A, B and C (build_plan, path_lines)
   quest_path.py    quest chains and tonight's quest
   snapshots.py     saving an XP snapshot on every fetch
+  progress.py      the Progress screen's numbers (from the saved snapshots)
   players.py       which player: folders, answers, the remembered player
   player_cache.py  the in-memory store of fetched players
 
@@ -36,6 +37,7 @@ from account import LEVEL_XP, skill_rows
 from check_methods import load_methods, load_quest_files
 from plan_session import also_text, build_plan, path_lines, split_ruled_out
 from player_cache import entry_for, fetch_safely, needs_fetch, record_failure, record_success
+from progress import gain_lines, max_cape_xp, read_snapshots, signed_xp, since_text, skills_moved
 from players import (
     check_name, folder_name, known_players, read_answers, read_current, save_answer, save_current,
 )
@@ -195,7 +197,7 @@ def bar(fraction, thin=False):
 
 
 # Bottom nav buttons that have a screen; the others say "coming soon".
-NAV_TARGETS = {"Home": "/", "Skills": "/skills", "Quests": "/quests"}
+NAV_TARGETS = {"Home": "/", "Skills": "/skills", "Quests": "/quests", "Progress": "/progress"}
 
 
 def bottom_nav(active):
@@ -582,6 +584,95 @@ def goal_page():
                                  f"{skills_short(numbers['short'])}").classes("goal-progress")
 
     bottom_nav("Quests")
+
+
+# ---------------------------------------------------------------------------
+# Screen: Progress
+# ---------------------------------------------------------------------------
+
+@ui.page("/progress", title="Progress - RS3 Planner")
+def progress_page():
+    entry = current_entry()
+    if entry is None:   # nobody chosen yet: go and pick a player
+        return RedirectResponse("/player")
+
+    # Only the saved snapshot files (see progress.py): this screen never fetches,
+    # so it still works when RuneMetrics is down. Read fresh on every visit.
+    snapshots, skipped = read_snapshots(CURRENT["name"])
+    today = datetime.date.today()
+
+    with ui.column().classes("page"):
+        ui.label("Progress").classes("title")
+        ui.label(entry["name"]).classes("subtitle")
+        if snapshots:
+            ui.label(snapshot_count_text(snapshots)).classes("muted")
+        if skipped:
+            ui.label(skipped_text(skipped)).classes("muted small")
+
+        if not snapshots:
+            with panel():
+                ui.label("No snapshots saved yet").classes("heading")
+                ui.label("One is saved each time stats are fetched (at start-up and on Refresh).").classes("muted")
+            bottom_nav("Progress")
+            return
+
+        max_cape_panel(snapshots)
+        gained_panel(snapshots, today)
+
+    bottom_nav("Progress")
+
+
+def snapshot_count_text(snapshots):
+    """'20 snapshots · last 15:33, 5 Oct'."""
+    newest = snapshots[-1]["when"]
+    count = f"{len(snapshots)} snapshot" + ("" if len(snapshots) == 1 else "s")
+    return f"{count} · last {newest:%H:%M}, {newest.day} {newest:%b}"
+
+
+def skipped_text(skipped):
+    if skipped == 1:
+        return "1 snapshot file couldn't be read and was skipped."
+    return f"{skipped} snapshot files couldn't be read and were skipped."
+
+
+def max_cape_panel(snapshots):
+    """Max cape now, from the newest snapshot (the same rule as Home's card)."""
+    newest = snapshots[-1]
+    cape = max_cape_xp(newest["skills"])   # None if the snapshot lacks a skill
+    with panel():
+        ui.label("Max cape").classes("label")
+        ui.label(f"{cape['percent']:.1f}%" if cape else NO_VALUE).classes("big-number")
+        ui.label(f"{cape['to_go']:,.0f} XP to go" if cape else f"{NO_VALUE} XP to go").classes("heading")
+        ui.label(f"Total XP {newest['total_xp']:,.0f}").classes("muted")
+
+
+def gained_panel(snapshots, today):
+    """XP gained Today / Last 7 days / Since first snapshot, then the skills that moved."""
+    with panel():
+        ui.label("Gained").classes("label green")
+        for line in gain_lines(snapshots, today):
+            if line["state"] == "none_today":
+                ui.label(f"{line['name']}: no snapshot yet").classes("muted")
+                continue
+            if line["state"] == "only_one":
+                ui.label(f"{line['name']}: only one snapshot so far").classes("muted")
+                continue
+            cape = NO_VALUE if line["max_cape"] is None else signed_xp(line["max_cape"])
+            ui.label(line["name"]).classes("heading")
+            ui.label(f"{signed_xp(line['total'])} XP · {cape} toward max cape · "
+                     f"{since_text(line['start']['when'], today)}").classes("muted")
+
+        start, moved = skills_moved(snapshots, today)
+        if start is None:   # only one snapshot: nothing to compare
+            return
+        since = since_text(start["when"], today)
+        ui.label(f"Skills that moved {since}").classes("label")
+        if not moved:
+            ui.label(f"No skill has moved {since}.").classes("muted small")
+        for skill, xp in moved:
+            with ui.row().classes("row-line"):
+                ui.label(skill).classes("heading")
+                ui.label(f"{signed_xp(xp)} XP").classes("muted")
 
 
 # ---------------------------------------------------------------------------

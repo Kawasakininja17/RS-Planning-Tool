@@ -16,6 +16,7 @@ made-up dates instead of the real clock.
 
 import datetime
 import json
+import math
 
 from players import player_dir
 from rs3_planner import SKILL_NAMES, XP_FOR_99_ELITE, XP_FOR_99_NORMAL
@@ -47,9 +48,22 @@ def read_snapshots(username):
     return snapshots, skipped
 
 
+def set_aside_future(snapshots, today):
+    """
+    (snapshots up to today, how many were dated after today). A file dated in the
+    future can only come from a wrong computer clock; left in, it would stay the
+    "newest" snapshot until that date and freeze every gain at it.
+    """
+    kept = [s for s in snapshots if s["when"].date() <= today]
+    return kept, len(snapshots) - len(kept)
+
+
 def is_number(value):
-    """True for 12 or 12.5. (Python counts True/False as numbers too; a snapshot never holds them.)"""
-    return isinstance(value, (int, float)) and not isinstance(value, bool)
+    """
+    True for 12 or 12.5. (Python counts True/False as numbers too, and its JSON
+    reader accepts NaN and Infinity; a snapshot never holds any of those.)
+    """
+    return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
 
 
 def read_one(path):
@@ -89,12 +103,19 @@ def max_cape_xp(skills):
     or None if any of the 29 skills is missing (better no number than a wrong one).
     """
     needed = done = 0
+    gaps = []   # XP still needed in each skill under 99
     for name in SKILL_NAMES:
         if name not in skills:
             return None
         needed += target_xp(name)
         done += min(skills[name], target_xp(name))
-    return {"done": done, "needed": needed, "to_go": needed - done, "percent": done / needed * 100}
+        if skills[name] < target_xp(name):
+            gaps.append(target_xp(name) - skills[name])
+    # XP to go is added up exactly as Home's card does it (rs3_planner.xp_needed_for_99:
+    # each gap, smallest first). XP comes in tenths, so the total often ends in .5, and
+    # adding in another order could round it the other way: the screens would disagree.
+    to_go = sum(sorted(gaps))
+    return {"done": done, "needed": needed, "to_go": to_go, "percent": done / needed * 100}
 
 
 def last_per_day(snapshots):
@@ -105,19 +126,23 @@ def last_per_day(snapshots):
     return [by_day[day] for day in sorted(by_day)]
 
 
+# Chart points are whole numbers, rounded here with Python's round(), the same way
+# the screen's ',.0f' labels round (a .5 goes to the even number). The browser's own
+# rounding treats .5 differently, so it must only ever get whole numbers.
+
 def max_cape_points(snapshots):
     """[(date, XP still to go for max cape)], one per day; days we can't work out are left out."""
     points = []
     for snapshot in last_per_day(snapshots):
         cape = max_cape_xp(snapshot["skills"])
         if cape is not None:
-            points.append((snapshot["when"].date(), cape["to_go"]))
+            points.append((snapshot["when"].date(), round(cape["to_go"])))
     return points
 
 
 def skill_points(snapshots, skill):
     """[(date, XP in this skill)], one per day; days whose snapshot lacks the skill are left out."""
-    return [(s["when"].date(), s["skills"][skill]) for s in last_per_day(snapshots) if skill in s["skills"]]
+    return [(s["when"].date(), round(s["skills"][skill])) for s in last_per_day(snapshots) if skill in s["skills"]]
 
 
 # ---------------------------------------------------------------------------

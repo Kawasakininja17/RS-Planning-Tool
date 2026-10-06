@@ -38,8 +38,8 @@ from check_methods import load_methods, load_quest_files
 from plan_session import also_text, build_plan, path_lines, split_ruled_out
 from player_cache import entry_for, fetch_safely, needs_fetch, record_failure, record_success
 from progress import (
-    default_skill, gain_lines, max_cape_points, max_cape_xp, read_snapshots, signed_xp, since_text,
-    skill_gain_since_first, skill_order, skill_points, skills_moved,
+    default_skill, gain_lines, max_cape_points, max_cape_xp, read_snapshots, set_aside_future, signed_xp,
+    since_text, skill_gain_since_first, skill_order, skill_points, skills_moved,
 )
 from players import (
     check_name, folder_name, known_players, read_answers, read_current, save_answer, save_current,
@@ -603,6 +603,7 @@ def progress_page():
     # so it still works when RuneMetrics is down. Read fresh on every visit.
     snapshots, skipped = read_snapshots(CURRENT["name"])
     today = datetime.date.today()
+    snapshots, future = set_aside_future(snapshots, today)   # only from a wrong computer clock
 
     with ui.column().classes("page"):
         ui.label("Progress").classes("title")
@@ -611,6 +612,8 @@ def progress_page():
             ui.label(snapshot_count_text(snapshots)).classes("muted")
         if skipped:
             ui.label(skipped_text(skipped)).classes("muted small")
+        if future:
+            ui.label(future_text(future)).classes("muted small")
 
         if not snapshots:
             with panel():
@@ -637,6 +640,12 @@ def skipped_text(skipped):
     if skipped == 1:
         return "1 snapshot file couldn't be read and was skipped."
     return f"{skipped} snapshot files couldn't be read and were skipped."
+
+
+def future_text(future):
+    if future == 1:
+        return "1 snapshot is dated in the future and was set aside."
+    return f"{future} snapshots are dated in the future and were set aside."
 
 
 # Chart colours: the same values as static/app.css. ECharts draws on a canvas,
@@ -694,6 +703,7 @@ def line_chart(points, value_word):
         "yAxis": {
             "type": "value",
             "scale": True,   # zoom to the data instead of starting at 0
+            "minInterval": 1,   # ticks at least 1 XP apart, so no label repeats ("0, 0, 1")
             "splitLine": {"lineStyle": {"color": CHART_GRID, "width": 1, "type": "solid"}},
             "axisLabel": {"color": CHART_TEXT, ":formatter": NUMBER_LABEL_JS},
         },

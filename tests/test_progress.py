@@ -4,6 +4,7 @@ real data/players/."""
 
 import datetime
 import json
+import random
 import tempfile
 import unittest
 from pathlib import Path
@@ -11,10 +12,10 @@ from pathlib import Path
 import players
 from account import read_account, skill_rows
 from progress import (
-    default_skill, gain_lines, last_per_day, max_cape_points, max_cape_xp, read_snapshots,
+    default_skill, gain_lines, last_per_day, max_cape_points, max_cape_xp, read_snapshots, set_aside_future,
     signed_xp, since_text, skill_gain_since_first, skill_order, skill_points, skills_moved,
 )
-from rs3_planner import SKILL_NAMES
+from rs3_planner import SKILL_NAMES, xp_needed_for_99
 from snapshots import save_snapshot
 
 NAME = "Some Player"
@@ -96,6 +97,12 @@ class ReadSnapshotsTests(unittest.TestCase):
         self.assertEqual(len(snapshots), 1)
         self.assertEqual(skipped, 9)
 
+    def test_not_a_number_values_are_skipped(self):
+        # Python's JSON reader accepts NaN and Infinity; a damaged file could hold them.
+        self.write("nan-total.json", b'{"fetched_at": "2026-10-05T10:00:00", "total_xp": NaN, "skills": {"Attack": 1}}')
+        self.write("inf-xp.json", b'{"fetched_at": "2026-10-05T11:00:00", "total_xp": 5, "skills": {"Attack": Infinity}}')
+        self.assertEqual(read_snapshots(NAME), ([], 2))
+
     def test_unknown_skill_names_are_ignored(self):
         self.write("a.json", record(skills_xp={"Attack": 5, "Sailing": 7}))
         snapshots, _ = read_snapshots(NAME)
@@ -125,6 +132,18 @@ class MaxCapeTests(unittest.TestCase):
         cape = max_cape_xp(skills(Invention=20_000_000))
         self.assertEqual(cape["done"], 28_000_000 + 20_000_000)
 
+    def test_xp_to_go_matches_homes_card_exactly(self):
+        # XP comes in tenths, so XP to go often ends in .5; adding the same numbers in
+        # another order can round it the other way. Progress must add them up exactly
+        # as Home's card does (rs3_planner.xp_needed_for_99), on many made-up accounts.
+        rng = random.Random(7)
+        for _ in range(2000):
+            profile = {"skillvalues": [{"id": i, "xp": rng.randrange(0, 200_000_000), "level": 1}
+                                       for i in range(len(SKILL_NAMES))]}
+            xp = {SKILL_NAMES[s["id"]]: s["xp"] / 10 for s in profile["skillvalues"]}
+            home = sum(gap for _, gap in xp_needed_for_99(profile))
+            self.assertEqual(max_cape_xp(xp)["to_go"], home)
+
     def test_a_missing_skill_gives_none(self):
         xp = skills()
         del xp["Mining"]
@@ -145,6 +164,15 @@ class PerDayTests(unittest.TestCase):
         points = skill_points([snap(5, 15), snap(6, 10, Mining=1_200_000)], "Mining")
         self.assertEqual(points, [(datetime.date(2026, 10, 5), 1_000_000),
                                   (datetime.date(2026, 10, 6), 1_200_000)])
+
+    def test_points_are_whole_numbers_rounded_like_the_labels(self):
+        # The labels use Python's ',.0f', which rounds a .5 to the even number; the
+        # chart's hover text must show the same number, so points arrive already whole.
+        points = skill_points([snap(5, 15, Mining=28_718_588.5), snap(6, 10, Mining=28_718_589.5)], "Mining")
+        self.assertEqual([value for _, value in points], [28_718_588, 28_718_590])
+        self.assertTrue(all(isinstance(value, int) for _, value in points))
+        cape_points = max_cape_points([snap(5, 15, Mining=1_000_000.5), snap(6, 10)])
+        self.assertTrue(all(isinstance(value, int) for _, value in cape_points))
 
     def test_a_day_missing_a_skill_is_left_out(self):
         broken = snap(6, 10)
@@ -279,6 +307,18 @@ class DefaultSkillTests(unittest.TestCase):
 
     def test_no_snapshots(self):
         self.assertIsNone(default_skill([], TODAY))
+
+
+class FutureTests(unittest.TestCase):
+    def test_snapshots_dated_after_today_are_set_aside(self):
+        # A wrong computer clock once: files dated after today would freeze the
+        # Gained panel at that date, so they are set aside and counted.
+        kept, future = set_aside_future([snap(19, 9), snap(20, 23), snap(21, 9), snap(25, 1)], TODAY)
+        self.assertEqual([s["when"].day for s in kept], [19, 20])
+        self.assertEqual(future, 2)
+
+    def test_nothing_to_set_aside(self):
+        self.assertEqual(set_aside_future([], TODAY), ([], 0))
 
 
 class SkillGainTests(unittest.TestCase):

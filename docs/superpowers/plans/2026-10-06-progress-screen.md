@@ -27,7 +27,7 @@
 
 1. **No live stats loaded** (RuneMetrics down or the start-up fetch failed) while snapshot files exist → Progress still shows everything from the files; the One skill line drops the level ("Woodcutting · 28,718,588 XP"). Pinned in Task 3 (browser check with the frozen profile hidden) and by `levels = {}` when `entry["account"]` is `None`.
 2. **The newest snapshot is dated after today** (computer clock was wrong once) → "Today: no snapshot yet", the other lines still measured, no crash. Pinned in Task 1 (`test_a_newest_snapshot_dated_after_today`).
-3. **The browser's time zone shifts a chart date to the day before** → dates are sent as local noon ("2026-10-05T12:00:00"). Pinned in Task 3 (browser check: axis and tooltip dates equal the snapshot dates).
+3. **The browser's time zone shifts a chart date to the day before** → dates are sent as local noon ("2026-10-05T12:00:00"). **Changed during the build to local midnight ("T00:00:00"), approved by Chris: ECharts puts day labels at midnight, so noon put the only label between two dots. See the spec and app.py.** Pinned in Task 3 (browser check: axis and tooltip dates equal the snapshot dates).
 4. **XP that goes down between two snapshots** (a RuneMetrics hiccup) → shown honestly as "−10", no crash. Pinned in Task 1 (`test_xp_going_down_shows_as_a_negative_gain`, `test_signed_xp`).
 5. **A snapshot missing a skill** (an older file, or a skill RuneMetrics left out) → that day is left out of the charts and "toward max cape" shows "—". Pinned in Task 1 (`test_a_day_missing_a_skill_is_left_out`, `test_max_cape_unknown_when_a_snapshot_lacks_a_skill`) and Task 2 (`NO_VALUE` in `max_cape_panel` and `gained_panel`).
 
@@ -1151,6 +1151,7 @@ def line_chart(points, value_word):
     snapshots shows as a gap. The value axis zooms to the data, or a small change
     on 269M would be invisible.
     """
+    # NOTE: changed to local midnight ("T00:00:00") during the build, approved by Chris; see app.py.
     # Each date at local noon: a plain "2026-10-05" could be read as midnight in
     # another time zone and land on the day before.
     data = [[f"{day:%Y-%m-%d}T12:00:00", value] for day, value in points]

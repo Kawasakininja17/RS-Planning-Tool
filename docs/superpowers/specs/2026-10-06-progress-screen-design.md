@@ -49,6 +49,11 @@ and no live stats are loaded.
 - "20 snapshots · last 15:33, 5 Oct" (readable snapshots; the newest one's time).
 - If any snapshot file couldn't be read: "1 snapshot file couldn't be read and was skipped."
   ("N snapshot files couldn't be read and were skipped." for more than one.)
+- If any snapshot is dated after today (only possible with a wrong computer clock): it is
+  set aside, not shown, and counted: "1 snapshot is dated in the future and was set aside."
+  ("N snapshots are dated in the future and were set aside."). Left in, it would stay the
+  "newest" snapshot until that date and freeze every gain at it. (Added after the final
+  review, approved by Chris 2026-10-06.)
 
 ### No snapshots
 
@@ -123,11 +128,12 @@ snapshots and dates instead of the real clock. A **snapshot** is
 
 | Function | Returns |
 |---|---|
-| `read_snapshots(username)` | `(snapshots, skipped)`: every readable `*.json` in `player_dir(username) / "snapshots"`, sorted by `fetched_at` (oldest first), and how many files were skipped. A file is skipped if it isn't valid UTF-8 JSON, `fetched_at` isn't an ISO date-time, `total_xp` isn't a number, or `skills` isn't a dict of numbers. Skill names not in `SKILL_NAMES` are ignored. A missing folder gives `([], 0)`. Never raises. |
-| `max_cape_xp(skills)` | `{"done", "needed", "to_go", "percent"}`: each skill's XP capped at its 99 amount (`XP_FOR_99_ELITE` for Invention, `XP_FOR_99_NORMAL` otherwise), summed over the 29 skills. `None` if any of the 29 is missing. |
+| `read_snapshots(username)` | `(snapshots, skipped)`: every readable `*.json` in `player_dir(username) / "snapshots"`, sorted by `fetched_at` (oldest first), and how many files were skipped. A file is skipped if it isn't valid UTF-8 JSON, `fetched_at` isn't an ISO date-time, `total_xp` isn't a number, or `skills` isn't a dict of numbers (NaN and Infinity, which Python's JSON reader accepts, don't count as numbers). Skill names not in `SKILL_NAMES` are ignored. A missing folder gives `([], 0)`. Never raises. |
+| `max_cape_xp(skills)` | `{"done", "needed", "to_go", "percent"}`: each skill's XP capped at its 99 amount (`XP_FOR_99_ELITE` for Invention, `XP_FOR_99_NORMAL` otherwise), summed over the 29 skills. `to_go` is added up exactly as Home's card does it (each skill's gap below 99, smallest first, as `rs3_planner.xp_needed_for_99`), so the two screens can't round a .5 differently. `None` if any of the 29 is missing. |
+| `set_aside_future(snapshots, today)` | `(snapshots dated today or earlier, how many were dated after today)`. The page uses only the first. |
 | `last_per_day(snapshots)` | The last snapshot of each calendar day of `when`, oldest day first. |
-| `max_cape_points(snapshots)` | `[(date, XP to go)]` from `last_per_day`, leaving out days where `max_cape_xp` is `None`. |
-| `skill_points(snapshots, skill)` | `[(date, XP)]` from `last_per_day`, leaving out days whose snapshot lacks the skill. |
+| `max_cape_points(snapshots)` | `[(date, XP to go)]` from `last_per_day`, leaving out days where `max_cape_xp` is `None`. Values are whole numbers, rounded with Python's `round()` (a .5 goes to the even number, the same as the screen's `,.0f` labels), so the chart's hover text matches the labels. |
+| `skill_points(snapshots, skill)` | `[(date, XP)]` from `last_per_day`, leaving out days whose snapshot lacks the skill. Whole numbers, rounded as in `max_cape_points`. |
 | `since_text(when, today)` | "since 08:39" when `when` is today, else "since 15:33, 5 Oct". |
 | `gain_lines(snapshots, today)` | The Gained panel's lines, in order, after the leave-out rules: each `{"name", "state", "start", "total", "max_cape"}`. `state` is `"gain"`, `"none_today"` or `"only_one"`; `start` is the start snapshot (or `None`); `total` and `max_cape` are the differences (or `None` when not `"gain"`, or when not computable). |
 | `skills_moved(snapshots, today)` | `(start, [(skill, XP gained)])`: the start snapshot (the Last 7 days start, else the first snapshot) and the gains up to the newest, biggest first, only gains above 0, only skills in both snapshots. `(None, [])` when there are fewer than 2 snapshots. |
@@ -151,9 +157,13 @@ Builds the `ui.echart` settings for both charts. `points` is `[(date, value)]`;
 `value_word` is "to go" or "XP" for the tooltip.
 
 - **Date axis** (ECharts `type: "time"`), so missing days show as gaps with true spacing.
-  Each date is sent as a local noon time string ("2026-10-05T12:00:00") so the browser's
-  time zone can't shift it to the previous day.
-- **Value axis zooms to the data** (`scale: true`); axis labels are whole numbers with
+  Each date is sent as a local **midnight** time string ("2026-10-05T00:00:00"), where
+  ECharts puts its day labels, so every dot sits on its own date label. The time is written
+  out with no time zone, so the browser reads it as local time; a bare "2026-10-05" could be
+  read as UTC and land on the day before. (The first build used local noon; that put the
+  only day label between two dots. Changed to midnight, approved by Chris 2026-10-06.)
+- **Value axis zooms to the data** (`scale: true`), with ticks at least 1 XP apart
+  (`minInterval: 1`) so a line that barely moves never repeats a label ("0, 0, 1"); axis labels are whole numbers with
   commas ("269,276,000"). (Not shortened to "269.3M": on a zoomed axis the ticks are close
   together, so a shortened label would repeat on every tick.)
 - **Marks:** 2px line in glacial `#A8DCEB`, 8px dot markers with a 2px ring in the panel

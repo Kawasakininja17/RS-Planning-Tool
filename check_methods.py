@@ -98,7 +98,8 @@ def check_method(method, position):
     #    still counts as inside it. Where the wiki writes ranges (Mining, smelting,
     #    bonfires) they're copied as written, so neighbours share an edge level and
     #    both are offered there. Where it gives only starting levels (Fort Forinthry,
-    #    pickpocketing), each band ends one level before the next method starts.
+    #    pickpocketing), each band ends one level before the next method that needs
+    #    nothing extra (no quest) starts, so a missing quest never leaves a gap.
     if not is_whole_number(method["min_level"]) or not 1 <= method["min_level"] <= 120:
         problems.append(f"{label}: min_level must be a whole number from 1 to 120")
     top = method["max_level"]

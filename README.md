@@ -184,7 +184,9 @@ smelting bars, bonfires), they're copied as written, so neighbouring methods
 share an edge level (iron 10–20, coal 20–30) and at that level both are offered;
 the faster one wins. Where the wiki gives only a starting level (Fort Forinthry
 buildings, pickpocketing targets), each band ends one level before the next
-listed method starts. `max_level` itself still counts as inside the band.
+listed method that needs nothing extra (no quest) starts, so a missing quest
+never leaves a level with nothing to do. `max_level` itself still counts as
+inside the band.
 
 ## Planning a session
 

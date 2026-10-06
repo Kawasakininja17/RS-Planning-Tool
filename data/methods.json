@@ -1366,7 +1366,7 @@
       "unverified": ["Idealised base rate: 2,000 successful pickpockets per hour, without banking, failures or time spent refreshing buffs"],
       "source_url": "https://runescape.wiki/w/Thieving_training",
       "checked_date": "2026-10-05",
-      "notes": "Wiki: 'Pickpocketing is a low-intensity training method in which the player automatically repeats the pickpocket action until they are caught, their inventory becomes full, or they stop'. Band: this target's level to the next listed target's level minus 1. Table: level 1, base XP/hr 16,000. The wiki gives no click time."
+      "notes": "Wiki: 'Pickpocketing is a low-intensity training method in which the player automatically repeats the pickpocket action until they are caught, their inventory becomes full, or they stop'. Band: this target's level to one below the next listed target with no extra requirements. Table: level 1, base XP/hr 16,000. The wiki gives no click time."
     },
     {
       "type": "training",
@@ -1388,7 +1388,7 @@
       "unverified": ["Idealised base rate: 2,000 successful pickpockets per hour, without banking, failures or time spent refreshing buffs"],
       "source_url": "https://runescape.wiki/w/Thieving_training",
       "checked_date": "2026-10-05",
-      "notes": "Wiki: 'Pickpocketing is a low-intensity training method in which the player automatically repeats the pickpocket action until they are caught, their inventory becomes full, or they stop'. Band: this target's level to the next listed target's level minus 1. Table: level 10, base XP/hr 29,000. The wiki gives no click time."
+      "notes": "Wiki: 'Pickpocketing is a low-intensity training method in which the player automatically repeats the pickpocket action until they are caught, their inventory becomes full, or they stop'. Band: this target's level to one below the next listed target with no extra requirements. Table: level 10, base XP/hr 29,000. The wiki gives no click time."
     },
     {
       "type": "training",
@@ -1410,14 +1410,14 @@
       "unverified": ["Idealised base rate: 2,000 successful pickpockets per hour, without banking, failures or time spent refreshing buffs"],
       "source_url": "https://runescape.wiki/w/Thieving_training",
       "checked_date": "2026-10-05",
-      "notes": "Wiki: 'Pickpocketing is a low-intensity training method in which the player automatically repeats the pickpocket action until they are caught, their inventory becomes full, or they stop'. Band: this target's level to the next listed target's level minus 1. Table: level 15, base XP/hr 44,400. The wiki gives no click time."
+      "notes": "Wiki: 'Pickpocketing is a low-intensity training method in which the player automatically repeats the pickpocket action until they are caught, their inventory becomes full, or they stop'. Band: this target's level to one below the next listed target with no extra requirements. Table: level 15, base XP/hr 44,400. The wiki gives no click time."
     },
     {
       "type": "training",
       "name": "Pickpocketing warrior women",
       "skill": "Thieving",
       "min_level": 25,
-      "max_level": 39,
+      "max_level": 37,
       "xp_per_hour_low": 52000,
       "xp_per_hour_high": 52000,
       "gp_per_hour": null,
@@ -1431,8 +1431,52 @@
       },
       "unverified": ["Idealised base rate: 2,000 successful pickpockets per hour, without banking, failures or time spent refreshing buffs"],
       "source_url": "https://runescape.wiki/w/Thieving_training",
-      "checked_date": "2026-10-05",
-      "notes": "Wiki: 'Pickpocketing is a low-intensity training method in which the player automatically repeats the pickpocket action until they are caught, their inventory becomes full, or they stop'. Band: this target's level to the next listed target's level minus 1. Table: level 25, base XP/hr 52,000. The wiki gives no click time."
+      "checked_date": "2026-10-06",
+      "notes": "Wiki: 'Pickpocketing is a low-intensity training method in which the player automatically repeats the pickpocket action until they are caught, their inventory becomes full, or they stop'. Band: this target's level to one below the next listed target with no extra requirements. Table: level 25, base XP/hr 52,000. The wiki gives no click time."
+    },
+    {
+      "type": "training",
+      "name": "Pickpocketing cave goblins",
+      "skill": "Thieving",
+      "min_level": 36,
+      "max_level": 37,
+      "xp_per_hour_low": 80000,
+      "xp_per_hour_high": 80000,
+      "gp_per_hour": null,
+      "gp_after_tax": null,
+      "minutes_between_clicks": null,
+      "requirements": {
+        "quests": ["Death to the Dorgeshuun"],
+        "other": [],
+        "skills": {},
+        "unlocks": []
+      },
+      "unverified": ["Idealised base rate: 2,000 successful pickpockets per hour, without banking, failures or time spent refreshing buffs"],
+      "source_url": "https://runescape.wiki/w/Thieving_training",
+      "checked_date": "2026-10-06",
+      "notes": "Wiki (Cave goblin (Dorgesh-Kaan)): '...can be pickpocketed at level 36 Thieving, yielding 40 Thieving experience'. Dorgesh-Kaan page: 'The city can only be accessed after completion of Death to the Dorgeshuun'. Band: this target's level to one below the next listed target with no extra requirements. Table: level 36, base XP/hr 80,000. The wiki gives no click time."
+    },
+    {
+      "type": "training",
+      "name": "Pickpocketing Master Farmers",
+      "skill": "Thieving",
+      "min_level": 38,
+      "max_level": 39,
+      "xp_per_hour_low": 86000,
+      "xp_per_hour_high": 86000,
+      "gp_per_hour": null,
+      "gp_after_tax": null,
+      "minutes_between_clicks": null,
+      "requirements": {
+        "quests": [],
+        "other": [],
+        "skills": {},
+        "unlocks": []
+      },
+      "unverified": ["Idealised base rate: 2,000 successful pickpockets per hour, without banking, failures or time spent refreshing buffs"],
+      "source_url": "https://runescape.wiki/w/Thieving_training",
+      "checked_date": "2026-10-06",
+      "notes": "Wiki (Master Farmer): 'It takes level 38 Thieving to pickpocket them. If the theft is successful, then the player will receive 43 Thieving experience and a random seed or coins'. Training table footnote: 'These targets give useful loot for some players, but the inventory may fill without a Thieving cape or regular banking.' Band: this target's level to one below the next listed target with no extra requirements. Table: level 38, base XP/hr 86,000. The wiki gives no click time."
     },
     {
       "type": "training",
@@ -1454,7 +1498,7 @@
       "unverified": ["Idealised base rate: 2,000 successful pickpockets per hour, without banking, failures or time spent refreshing buffs"],
       "source_url": "https://runescape.wiki/w/Thieving_training",
       "checked_date": "2026-10-05",
-      "notes": "Wiki: 'Pickpocketing is a low-intensity training method in which the player automatically repeats the pickpocket action until they are caught, their inventory becomes full, or they stop'. Band: this target's level to the next listed target's level minus 1. Table: level 40, base XP/hr 93,600. The wiki gives no click time."
+      "notes": "Wiki: 'Pickpocketing is a low-intensity training method in which the player automatically repeats the pickpocket action until they are caught, their inventory becomes full, or they stop'. Band: this target's level to one below the next listed target with no extra requirements. Table: level 40, base XP/hr 93,600. The wiki gives no click time."
     },
     {
       "type": "training",
@@ -1476,7 +1520,7 @@
       "unverified": ["Idealised base rate: 2,000 successful pickpockets per hour, without banking, failures or time spent refreshing buffs"],
       "source_url": "https://runescape.wiki/w/Thieving_training",
       "checked_date": "2026-10-05",
-      "notes": "Wiki: 'Pickpocketing is a low-intensity training method in which the player automatically repeats the pickpocket action until they are caught, their inventory becomes full, or they stop'. Band: this target's level to the next listed target's level minus 1. Table: level 42, base XP/hr 116,000. Wiki: 'the inventory may fill without a Thieving cape or regular banking.' The wiki gives no click time."
+      "notes": "Wiki: 'Pickpocketing is a low-intensity training method in which the player automatically repeats the pickpocket action until they are caught, their inventory becomes full, or they stop'. Band: this target's level to one below the next listed target with no extra requirements. Table: level 42, base XP/hr 116,000. Wiki: 'the inventory may fill without a Thieving cape or regular banking.' The wiki gives no click time."
     },
     {
       "type": "training",
@@ -1498,7 +1542,29 @@
       "unverified": ["Idealised base rate: 2,000 successful pickpockets per hour, without banking, failures or time spent refreshing buffs"],
       "source_url": "https://runescape.wiki/w/Thieving_training",
       "checked_date": "2026-10-05",
-      "notes": "Wiki: 'Pickpocketing is a low-intensity training method in which the player automatically repeats the pickpocket action until they are caught, their inventory becomes full, or they stop'. Band: this target's level to the next listed target's level minus 1. Table: level 45, base XP/hr 130,000. The wiki gives no click time."
+      "notes": "Wiki: 'Pickpocketing is a low-intensity training method in which the player automatically repeats the pickpocket action until they are caught, their inventory becomes full, or they stop'. Band: this target's level to one below the next listed target with no extra requirements. Table: level 45, base XP/hr 130,000. The wiki gives no click time."
+    },
+    {
+      "type": "training",
+      "name": "Pickpocketing Menaphite marketeers",
+      "skill": "Thieving",
+      "min_level": 46,
+      "max_level": 49,
+      "xp_per_hour_low": 133200,
+      "xp_per_hour_high": 133200,
+      "gp_per_hour": null,
+      "gp_after_tax": null,
+      "minutes_between_clicks": null,
+      "requirements": {
+        "quests": ["The Jack of Spades"],
+        "other": [],
+        "skills": {},
+        "unlocks": []
+      },
+      "unverified": ["Idealised base rate: 2,000 successful pickpockets per hour, without banking, failures or time spent refreshing buffs"],
+      "source_url": "https://runescape.wiki/w/Thieving_training",
+      "checked_date": "2026-10-06",
+      "notes": "Wiki (Menaphite marketeer): 'They can be pickpocketed at level 46 Thieving, earning 66.6 Thieving experience'. Access: 'Partial completion of The Jack of Spades'; RuneMetrics only shows whole quests, so the full quest is required here, as for the Menaphos market guards. Training table footnote: 'simple stackable loot'. Band: this target's level to one below the next listed target with no extra requirements. Table: level 46, base XP/hr 133,200. The wiki gives no click time."
     },
     {
       "type": "training",
@@ -1520,7 +1586,7 @@
       "unverified": ["Idealised base rate: 2,000 successful pickpockets per hour, without banking, failures or time spent refreshing buffs"],
       "source_url": "https://runescape.wiki/w/Thieving_training",
       "checked_date": "2026-10-05",
-      "notes": "Wiki: 'Pickpocketing is a low-intensity training method in which the player automatically repeats the pickpocket action until they are caught, their inventory becomes full, or they stop'. Band: this target's level to the next listed target's level minus 1. Table: level 50, base XP/hr 150,000. Wiki: 'the inventory may fill without a Thieving cape or regular banking.' The wiki gives no click time."
+      "notes": "Wiki: 'Pickpocketing is a low-intensity training method in which the player automatically repeats the pickpocket action until they are caught, their inventory becomes full, or they stop'. Band: this target's level to one below the next listed target with no extra requirements. Table: level 50, base XP/hr 150,000. Wiki: 'the inventory may fill without a Thieving cape or regular banking.' The wiki gives no click time."
     },
     {
       "type": "training",
@@ -1542,7 +1608,7 @@
       "unverified": ["Idealised base rate: 2,000 successful pickpockets per hour, without banking, failures or time spent refreshing buffs"],
       "source_url": "https://runescape.wiki/w/Thieving_training",
       "checked_date": "2026-10-05",
-      "notes": "Wiki: 'Pickpocketing is a low-intensity training method in which the player automatically repeats the pickpocket action until they are caught, their inventory becomes full, or they stop'. Band: this target's level to the next listed target's level minus 1. Table: level 53, base XP/hr 158,800. The wiki gives no click time."
+      "notes": "Wiki: 'Pickpocketing is a low-intensity training method in which the player automatically repeats the pickpocket action until they are caught, their inventory becomes full, or they stop'. Band: this target's level to one below the next listed target with no extra requirements. Table: level 53, base XP/hr 158,800. The wiki gives no click time."
     },
     {
       "type": "training",
@@ -1564,7 +1630,7 @@
       "unverified": ["Idealised base rate: 2,000 successful pickpockets per hour, without banking, failures or time spent refreshing buffs"],
       "source_url": "https://runescape.wiki/w/Thieving_training",
       "checked_date": "2026-10-05",
-      "notes": "Wiki: 'Pickpocketing is a low-intensity training method in which the player automatically repeats the pickpocket action until they are caught, their inventory becomes full, or they stop'. Band: this target's level to the next listed target's level minus 1. Table: level 55, base XP/hr 168,600. Wiki: 'simple stackable loot'. The wiki gives no click time."
+      "notes": "Wiki: 'Pickpocketing is a low-intensity training method in which the player automatically repeats the pickpocket action until they are caught, their inventory becomes full, or they stop'. Band: this target's level to one below the next listed target with no extra requirements. Table: level 55, base XP/hr 168,600. Wiki: 'simple stackable loot'. The wiki gives no click time."
     },
     {
       "type": "training",

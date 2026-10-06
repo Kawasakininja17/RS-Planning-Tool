@@ -4,7 +4,10 @@ import copy
 import unittest
 
 from account import LEVEL_XP
-from plan_session import also_text, build_plan, check_method_for_session, pick_paths, runner_ups, split_ruled_out
+from plan_session import (
+    ALREADY_99, OUTGROWN, also_text, build_plan, check_method_for_session, pick_paths, runner_ups,
+    split_ruled_out,
+)
 from rs3_planner import SKILL_NAMES
 
 AUTOHEATER = {"id": "smithing-autoheater", "text": "Smithing autoheater"}
@@ -127,8 +130,15 @@ class RunnerUpTests(unittest.TestCase):
         picks = pick_paths(self.ready)
         self.assertEqual([m["name"] for m in picks], ["t1", "t2", "g1"])   # pick_paths unchanged
         also = runner_ups(self.ready, picks)
+        # B's own order is t3, t4, t5, but t3 and t5 are already under A, so B gets only t4.
         self.assertEqual([[m["name"] for m in path] for path in also],
-                         [["t5", "t3"], ["t3", "t4"], ["g3", "g2"]])
+                         [["t5", "t3"], ["t4"], ["g3", "g2"]])
+
+    def test_a_runner_up_is_never_repeated_under_another_path(self):
+        # A is filled first, then B, then C: a method already listed is skipped.
+        also = runner_ups(self.ready, pick_paths(self.ready))
+        names = [m["name"] for path in also for m in path]
+        self.assertEqual(len(names), len(set(names)))
 
     def test_a_pick_is_never_repeated_as_a_runner_up(self):
         picks = pick_paths(self.ready)
@@ -151,15 +161,19 @@ class RunnerUpTests(unittest.TestCase):
 class AlsoTextTests(unittest.TestCase):
     def test_training_with_a_range(self):
         method = ready_method("Choking ivy", low=86000, high=126000, skill="Woodcutting")
-        self.assertEqual(also_text(method), "Choking ivy (Woodcutting, 86,000–126,000 XP/hr)")
+        self.assertEqual(also_text(method), "Choking ivy · Woodcutting · 86,000–126,000 XP/hr")
 
     def test_training_with_one_figure(self):
         method = ready_method("Overgrown idols", low=100000, skill="Woodcutting")
-        self.assertEqual(also_text(method), "Overgrown idols (Woodcutting, 100,000 XP/hr)")
+        self.assertEqual(also_text(method), "Overgrown idols · Woodcutting · 100,000 XP/hr")
 
     def test_money(self):
         method = ready_method("Blessing extra fine sand", gp=3452400, skill="Prayer")
-        self.assertEqual(also_text(method), "Blessing extra fine sand (Prayer, 3,452,400 gp/hr)")
+        self.assertEqual(also_text(method), "Blessing extra fine sand · Prayer · 3,452,400 gp/hr")
+
+    def test_a_name_with_brackets_gets_no_second_pair(self):
+        method = ready_method("Mining banite (training)", low=84240, high=104520)
+        self.assertEqual(also_text(method), "Mining banite (training) · Mining · 84,240–104,520 XP/hr")
 
 
 class SplitRuledOutTests(unittest.TestCase):
@@ -181,6 +195,22 @@ class SplitRuledOutTests(unittest.TestCase):
 
     def test_nothing_ruled_out(self):
         self.assertEqual(split_ruled_out([]), ([], 0))
+
+    def test_folds_the_reasons_the_checker_really_writes(self):
+        # The reasons come from check_method_for_session itself, not typed here,
+        # so rewording a reason in one place can't quietly stop the folding.
+        outgrown = copy.deepcopy(METHOD)
+        outgrown.update(name="Outgrown", min_level=30, max_level=40)
+        outgrown["requirements"]["quests"] = ["Family Crest"]   # a second reason, too
+        finished = copy.deepcopy(METHOD)
+        finished["name"] = "Finished"
+        ruled_out = []
+        for method, account in ((outgrown, make_account(95)), (finished, make_account(99))):
+            blocked, _, _ = check_method_for_session(method, account, 2, YES)
+            ruled_out.append((method, blocked))
+        self.assertTrue(ruled_out[0][1][0].startswith(OUTGROWN))
+        self.assertIn(ALREADY_99, ruled_out[1][1])
+        self.assertEqual(split_ruled_out(ruled_out), ([], 2))
 
 
 if __name__ == "__main__":

@@ -34,6 +34,12 @@ from rs3_planner import load_profile, load_quests
 DEFAULT_HOURS = 5
 DEFAULT_MINUTES = 2
 
+# The two reasons that mean "you'll never use this method again". They are written
+# by check_method_for_session and recognised by split_ruled_out, so both use these
+# names: rewording one can't quietly stop the other from finding it.
+ALREADY_99 = "already 99"
+OUTGROWN = "you've outgrown this"
+
 
 # ---------------------------------------------------------------------------
 # Filtering: can you do this method right now?
@@ -62,7 +68,7 @@ def check_method_for_session(method, account, max_minutes, answers):
         levels = [(skill, account["skills"][skill]["level"]) for skill in skills]
         if all(level > top for _, level in levels):
             have = " and ".join(f"{skill} {level}" for skill, level in levels)
-            blocked.append(f"you've outgrown this ({have}; this method's rates are "
+            blocked.append(f"{OUTGROWN} ({have}; this method's rates are "
                            f"for levels {method['min_level']}–{top})")
     # Extra levels some methods need beyond min_level (e.g. 99 Mining for a mining cape).
     for skill, level in method["requirements"]["skills"].items():
@@ -92,7 +98,7 @@ def check_method_for_session(method, account, max_minutes, answers):
 
     # Training only makes sense for the max cape if a skill is still under 99.
     if method["type"] == "training" and all(xp_to_99(account, s) == 0 for s in skills):
-        blocked.append("already 99")
+        blocked.append(ALREADY_99)
 
     if method["gp_after_tax"] is False:
         warnings.append("gp figure is BEFORE Grand Exchange tax (the wiki gives no after-tax figure)")
@@ -135,8 +141,10 @@ RUNNER_UPS = 2   # how many "Also good" methods each path shows
 def runner_ups(ready, picks, count=RUNNER_UPS):
     """
     For paths A, B and C: the next `count` best ready methods, ranked by that
-    path's own rule (the same rules as pick_paths). A method already picked on
-    any path is never repeated. Returns [list for A, list for B, list for C].
+    path's own rule (the same rules as pick_paths). No method appears twice on the
+    page: a picked method is never a runner-up, and A's list is filled first, then
+    B's, then C's, each skipping methods already listed above it (the next best one
+    takes its place). Returns [list for A, list for B, list for C].
     """
     others = [m for m in ready if not any(m is p for p in picks)]
     training = [m for m in others if m["type"] == "training"]
@@ -145,18 +153,29 @@ def runner_ups(ready, picks, count=RUNNER_UPS):
     by_closest = sorted(training, key=lambda m: (m["_gap"], -m["xp_per_hour_low"]))
     by_xp = sorted(training, key=lambda m: (m["xp_per_hour_low"], m["xp_per_hour_high"]), reverse=True)
     by_gp = sorted(money, key=lambda m: m["gp_per_hour"], reverse=True)
-    return [by_closest[:count], by_xp[:count], by_gp[:count]]
+
+    listed = []   # methods already shown under an earlier path
+    lists = []
+    for ranked in (by_closest, by_xp, by_gp):
+        fresh = [m for m in ranked if not any(m is shown for shown in listed)][:count]
+        listed.extend(fresh)
+        lists.append(fresh)
+    return lists
 
 
 def also_text(method):
-    """One runner-up in a line, e.g. 'Choking ivy (Woodcutting, 86,000–126,000 XP/hr)'."""
+    """
+    One runner-up in a line, e.g. 'Choking ivy · Woodcutting · 86,000–126,000 XP/hr'.
+    Dots, not brackets: 16 method names already contain brackets ("Mining banite
+    (training)") and 9 contain a colon ("Bonfire: oak logs"), but none a dot.
+    """
     if method["type"] == "money":
         rate = f"{method['gp_per_hour']:,} gp/hr"
     elif method["xp_per_hour_low"] == method["xp_per_hour_high"]:
         rate = f"{method['xp_per_hour_low']:,} XP/hr"
     else:
         rate = f"{method['xp_per_hour_low']:,}–{method['xp_per_hour_high']:,} XP/hr"
-    return f"{method['name']} ({method['skill']}, {rate})"
+    return f"{method['name']} · {method['skill']} · {rate}"
 
 
 def split_ruled_out(ruled_out):
@@ -168,7 +187,7 @@ def split_ruled_out(ruled_out):
     """
     blocked, finished = [], 0
     for method, reasons in ruled_out:
-        if any(r == "already 99" or r.startswith("you've outgrown this") for r in reasons):
+        if any(r == ALREADY_99 or r.startswith(OUTGROWN) for r in reasons):
             finished += 1
         else:
             blocked.append((method, reasons))

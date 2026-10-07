@@ -92,6 +92,47 @@ If you used git, get the newest version with `git pull` in the project folder,
 then run the setup's `pip install` line again (in case NiceGUI's version changed).
 With a ZIP, download it again.
 
+### Start it without a terminal (Linux)
+
+On Linux you can have the app start by itself in the background each time you
+log in, with an **RS3 Planner** icon (crossed swords) in your app list that opens
+it in your browser. After the one-time setup above, run this once from the
+project folder:
+
+```bash
+python3 tools/install_desktop.py
+```
+
+It adds two small settings files to your own account (no password needed) and
+starts the app. To see those two files first, without changing anything:
+
+```bash
+python3 tools/install_desktop.py --show
+```
+
+- **Open it:** click the **RS3 Planner** icon. You can pin it to the dock
+  (right-click it, then **Pin to Dash**). If the app isn't running, the icon
+  starts it first.
+- **Restart:** right-click the icon, then **Restart RS3 Planner**. Do this after
+  editing `data/methods.json` or updating the app (see *Updating later*): the app
+  reads its files only when it starts. A restart also fetches fresh stats.
+- **Stop:** right-click the icon, then **Stop RS3 Planner**. It stays stopped
+  until you click the icon again or next log in.
+- It stops when you log out and starts again when you log in.
+- If it doesn't start, a notification says why. The full log:
+  `journalctl --user -u rs3-planner`
+- The terminal way (`.venv/bin/python app.py`) still works, but only one copy can
+  use the app's address. If the terminal says "address already in use", choose
+  **Stop** on the icon first.
+- Moved the project folder? Run the install again from the new folder. The
+  folder's path must not contain `%`, `\`, `"`, `'`, `$` or a line break.
+
+To remove it (your answers, goals and snapshots in `data/` stay):
+
+```bash
+python3 tools/install_desktop.py --remove
+```
+
 ## Using the app
 
 1. **Choose player.** The first time, type a RuneScape name and press **Look up**.

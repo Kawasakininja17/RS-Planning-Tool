@@ -4,10 +4,13 @@ Every test writes into a temporary "home" folder, never the real one, and a
 FakeRun writes down the systemctl commands instead of running them.
 """
 
+import io
 import sys
 import tempfile
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
+from unittest import mock
 
 PROJECT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT / "tools"))   # the scripts in tools/ aren't on the import path by default
@@ -126,6 +129,7 @@ class InstallTests(unittest.TestCase):
                                                   ".local/share/applications/rs3-planner.desktop"])
         self.assertEqual(run.commands, [["systemctl", "--user", "daemon-reload"],
                                         ["systemctl", "--user", "enable", "rs3-planner.service"],
+                                        ["systemctl", "--user", "reset-failed", "rs3-planner.service"],
                                         ["systemctl", "--user", "restart", "rs3-planner.service"]])
         self.assertEqual(install_desktop.service_path(self.home).read_text(encoding="utf-8"),
                          install_desktop.service_text(self.project))
@@ -176,7 +180,15 @@ class InstallTests(unittest.TestCase):
     def test_reinstall_while_the_service_runs_goes_ahead(self):
         run = FakeRun()
         self.install(run=run, answers=replies(True, True), active=lambda: True)
-        self.assertEqual(len(run.commands), 3)
+        self.assertEqual(len(run.commands), 4)
+
+    def test_a_failing_reset_failed_does_not_stop_the_install(self):
+        # Clearing Ubuntu's "start repeated too quickly" lock is only a help; if it
+        # fails, the restart that follows reports any real problem.
+        run = FakeRun(fail_on="reset-failed")
+        lines = self.install(run=run)
+        self.assertEqual(run.commands[-1], ["systemctl", "--user", "restart", "rs3-planner.service"])
+        self.assertIn("The app is running: http://127.0.0.1:8080 (or click the RS3 Planner icon).", lines)
 
     def test_a_failing_systemctl_stops_with_its_message(self):
         with self.assertRaises(InstallError) as caught:
@@ -220,6 +232,31 @@ class InstallTests(unittest.TestCase):
         self.assertIn(install_desktop.desktop_text(self.project), text)
         self.assertIn(str(install_desktop.service_path(self.home)), text)
         self.assertEqual(self.installed_files(), [])
+
+
+class SudoTests(unittest.TestCase):
+    def test_running_with_sudo_is_refused_before_anything_happens(self):
+        # With sudo, "home" would be the administrator's (/root), not Chris's.
+        for argv in ([], ["--show"], ["--remove"]):
+            with mock.patch("os.geteuid", return_value=0), \
+                 mock.patch.object(install_desktop, "install") as install, \
+                 mock.patch.object(install_desktop, "remove") as remove, \
+                 mock.patch.object(install_desktop, "show") as show:
+                with self.assertRaises(SystemExit) as caught:
+                    install_desktop.main(argv)
+            self.assertEqual(str(caught.exception), "Run this without sudo: the app is installed for "
+                                                    "your own account, so no password is needed.")
+            for step in (install, remove, show):
+                step.assert_not_called()
+
+    def test_without_sudo_main_goes_ahead(self):
+        output = io.StringIO()
+        with mock.patch("os.geteuid", return_value=1000), \
+             mock.patch.object(install_desktop, "show", return_value=["shown"]) as show, \
+             redirect_stdout(output):
+            install_desktop.main(["--show"])
+        show.assert_called_once()
+        self.assertEqual(output.getvalue(), "shown\n")
 
 
 if __name__ == "__main__":

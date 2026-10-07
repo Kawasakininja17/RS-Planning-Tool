@@ -20,6 +20,7 @@ then turns the service on with systemctl. Standard library only.
 """
 
 import argparse
+import os
 import subprocess
 import sys
 import time
@@ -41,6 +42,8 @@ REFUSED_MESSAGE = ("Rename the project folder so its path has no %, \\, \", ' or
                    "then run the install again.")
 NO_VENV_MESSAGE = ("There's no .venv/bin/python in the project folder yet. Do the README's "
                    "one-time setup first (Install, step 2), then run the install again.")
+ROOT_MESSAGE = ("Run this without sudo: the app is installed for your own account, "
+                "so no password is needed.")
 BUSY_MESSAGE = (f"Something is already answering at {app_url()}, most likely the app started "
                 "from a terminal. Stop it (Ctrl+C in that terminal), then run the install again.")
 
@@ -181,6 +184,13 @@ def install(project, home, run=run_command, answers=app_answers, active=service_
     try:
         run(["systemctl", "--user", "daemon-reload"])        # reread the settings
         run(["systemctl", "--user", "enable", UNIT])         # start it at every login
+        try:
+            # After 3 failed starts (e.g. an earlier install with a broken data file) Ubuntu
+            # refuses more for a minute; this clears that. Only a help: if it fails, the
+            # restart below reports any real problem.
+            run(["systemctl", "--user", "reset-failed", UNIT])
+        except InstallError:
+            pass
         run(["systemctl", "--user", "restart", UNIT])        # start it now (or again, with new settings)
     except InstallError as error:
         raise InstallError(f"{error}\nThe two files were written, but the app wasn't turned on.")
@@ -228,6 +238,9 @@ def main(argv=None):
     choice.add_argument("--show", action="store_true", help="show the two files; change nothing")
     choice.add_argument("--remove", action="store_true", help="undo the install")
     args = parser.parse_args(argv)
+    # With sudo, Path.home() would be the administrator's home folder (/root), not yours.
+    if os.geteuid() == 0:
+        sys.exit(ROOT_MESSAGE)
     home = Path.home()
     try:
         if args.show:

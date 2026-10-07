@@ -133,22 +133,30 @@ WantedBy=default.target
 `Categories=Game;`, and two actions, **Restart RS3 Planner** (`--restart`) and
 **Stop RS3 Planner** (`--stop`).
 
-**Folder names that are refused.** If the project folder's path contains `%`, `\` or a line
-break, the installer writes nothing and says: "Rename the project folder so its path has no
-%, \ or line break, then run the install again." Why (decided with Chris 2026-10-07, after
-reading the official documents): systemd's manual doesn't say whether `%` is special in
-`WorkingDirectory=`, so any handling would be a guess; and a `\` in a launcher path must be
-written as four backslashes (freedesktop Desktop Entry spec, "The Exec key"), easy to get
-subtly wrong for a case Linux folder names practically never have.
+**Folder names that are refused.** If the project folder's path contains `%`, `\`, `"`, `'`, `$`
+or a line break, the installer writes nothing and says: "Rename the project folder so its path
+has no %, \, ", ' or $ or line break, then run the install again." Why (decided with Chris
+2026-10-07, after reading the official documents and testing with `systemd-analyze verify`):
 
-**Quoting** (for everything else, including spaces, `"`, `$`, `'` and `` ` ``):
+- systemd refuses to run a program whose path contains `"` or `'` ("Executable path contains
+  special characters"), however it is quoted;
+- `$` must be written `$$` in a command's arguments but is taken literally in the program's own
+  path, so one service file can't spell it the same way in both places;
+- systemd's manual doesn't say whether `%` is special in `WorkingDirectory=`;
+- a `\` in a launcher path must be written as four backslashes (freedesktop Desktop Entry spec,
+  "The Exec key"), easy to get subtly wrong.
+
+Linux folder names practically never contain these. (First decided for `%`, `\` and line breaks
+only; `"`, `'` and `$` were added on 2026-10-07 when Ubuntu's checker rejected them during the build.)
+
+**Quoting** (for everything else, including spaces and `` ` ``):
 
 - `.desktop` `Exec` lines (freedesktop Desktop Entry spec, "The Exec key"): every argument is
   wrapped in double quotes, with `"`, `` ` `` and `$` escaped by a backslash; then, because the
-  file's general string rule is applied first, every backslash is doubled. So a real `$` is
-  written `\\$` and a real `"` is written `\\"`.
-- systemd `ExecStart` (systemd.service(5) "Command lines", systemd.syntax(7) "Quoting"): each
-  path is wrapped in double quotes, with `"` escaped as `\"`, and a real `$` written as `$$`.
+  file's general string rule is applied first, every backslash is doubled. So a real `` ` `` is
+  written ``\\` ``.
+- systemd `ExecStart`: each path is wrapped in double quotes, so spaces are safe; nothing inside
+  needs escaping once the characters above are refused.
 - `WorkingDirectory`, `Icon` and the other plain-value lines take the path as written.
 
 **After writing**, the installer runs:
@@ -218,8 +226,8 @@ Standard library only; never touch the real home folder, never run `systemctl`,
 **Installer:**
 
 - the service and launcher texts for a plain project path contain the expected lines
-- a project path with spaces, and one with `"`, `$`, `'` and `` ` ``, is quoted correctly in both files
-- a project path with `%`, with `\`, or with a line break is refused before anything is written
+- a project path with spaces, and one with a `` ` `` and a space, is quoted correctly in both files
+- a project path with `%`, `\`, `"`, `'`, `$` or a line break is refused before anything is written
 - install writes exactly the two files into a scratch home folder and calls `daemon-reload`,
   `enable`, then `restart` (recorded by a fake runner)
 - something already answering while the service isn't running: nothing is written or run
@@ -248,8 +256,7 @@ Standard library only; never touch the real home folder, never run `systemctl`,
 2. `python3 tools/install_desktop.py --show` for the real project folder, shown to Chris
    before he installs. Both files, written into a scratch folder (not installed), pass Ubuntu's
    own checkers: `systemd-analyze --user verify` for the service and `desktop-file-validate` for
-   the launcher. The same checks are repeated for a scratch project path with spaces, `"`, `$`,
-   `'` and `` ` ``.
+   the launcher. The same checks are repeated for a scratch project path with spaces and a `` ` ``.
 3. **Chris** runs the install. Then, read-only: `systemctl --user is-active rs3-planner`,
    `ss -ltn` shows the app on `127.0.0.1:8080` only, and the Home page loads.
 4. Chris clicks the icon and tries Restart and Stop (or, with his OK, Claude clicks it using

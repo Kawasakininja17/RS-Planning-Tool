@@ -1,0 +1,16 @@
+<!-- @license lucide-static v1.52.0 - ISC -->
+<!-- RS3 Planner app icon: Lucide "swords" (see LICENSE-lucide.txt) in parchment on the app's forest panel. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <rect x="8" y="8" width="240" height="240" rx="48" fill="#16241B" stroke="#2E4636" stroke-width="8"/>
+  <g transform="translate(44 44) scale(7)" fill="none" stroke="#F0E8D6" stroke-width="2"
+     stroke-linecap="round" stroke-linejoin="round">
+    <path d="m13 19 6-6"/>
+    <path d="M14.5 17.5 3.586 6.586A2 2 0 013 5.172V3h2.172a2 2 0 011.414.586L17.5 14.5"/>
+    <path d="m14.828 6.172 2.586-2.586A2 2 0 0118.828 3H21v2.172a2 2 0 01-.586 1.414l-2.586 2.586"/>
+    <path d="m16 16 4 4"/>
+    <path d="m19 21 2-2"/>
+    <path d="m5 14 4 4"/>
+    <path d="m5 21-2-2"/>
+    <path d="M7.5 16.5 4 20"/>
+  </g>
+</svg>

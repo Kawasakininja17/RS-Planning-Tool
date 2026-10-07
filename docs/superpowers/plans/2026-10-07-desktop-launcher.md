@@ -15,7 +15,7 @@
 - `app.py`, every screen and the data files do not change. The app keeps `HOST = "127.0.0.1"`, `PORT = 8080`, one fetch per app run plus Refresh.
 - Standard library only in the new scripts and tests; nothing new in `requirements.txt`.
 - Service name and log tag: `rs3-planner`. Files written: `~/.config/systemd/user/rs3-planner.service` and `~/.local/share/applications/rs3-planner.desktop`. Nothing system-wide, no sudo.
-- A project path containing `%`, `\` or a line break is refused with: "Rename the project folder so its path has no %, \ or line break, then run the install again."
+- A project path containing `%`, `\`, `"`, `'`, `$` or a line break is refused with: "Rename the project folder so its path has no %, \, ", ' or $ or line break, then run the install again." (Widened from `%`, `\` and line breaks during Task 2, approved by Chris: `systemd-analyze verify` rejected quotes and `$` in the program path.)
 - Icon: Lucide's swords (lucide-static v1.52.0, ISC) in parchment `#F0E8D6` on a rounded forest panel `#16241B` with border `#2E4636`. No gradients, no emoji.
 - Tests never touch the real home folder, never run `systemctl`, `journalctl`, `notify-send` or `xdg-open`, never use the network, never touch the real `data/players/`. Tests use "Some Player" if a name is ever needed (none is).
 - Code is simple and commented in plain words, matching the existing files.
@@ -1160,7 +1160,7 @@ python3 tools/install_desktop.py --show
   use the app's address. If the terminal says "address already in use", choose
   **Stop** on the icon first.
 - Moved the project folder? Run the install again from the new folder. The
-  folder's path must not contain `%`, `\` or a line break.
+  folder's path must not contain `%`, `\`, `"`, `'`, `$` or a line break.
 
 To remove it (your answers, goals and snapshots in `data/` stay):
 

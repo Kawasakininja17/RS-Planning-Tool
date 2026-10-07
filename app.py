@@ -23,6 +23,8 @@ Start it (from the project folder):
 then open http://127.0.0.1:8080 in your browser. Stop it with Ctrl+C.
 
 It listens on 127.0.0.1 only, so other devices on your network can't reach it.
+It also answers only to the names 127.0.0.1 and localhost, and refuses requests
+that other websites start (see host_lock.py), so web pages can't use it.
 """
 
 import copy
@@ -30,11 +32,13 @@ import datetime
 import re
 from pathlib import Path
 
+from fastapi.middleware.trustedhost import TrustedHostMiddleware   # refuses requests for any other name
 from fastapi.responses import RedirectResponse   # sends a page to /player when no player is chosen
 from nicegui import app, run, ui
 
 from account import LEVEL_XP, skill_rows
 from check_methods import load_methods, load_quest_files
+from host_lock import OriginLock, allowed_origins
 from plan_session import also_text, build_plan, path_lines, split_ruled_out
 from player_cache import entry_for, fetch_safely, needs_fetch, record_failure, record_success
 from progress import (
@@ -56,6 +60,7 @@ from snapshots import save_snapshot
 HERE = Path(__file__).parent
 HOST = "127.0.0.1"   # this computer only - never 0.0.0.0
 PORT = 8080
+ALLOWED_HOSTS = [HOST, "localhost"]   # the names this app answers to; anything else is refused
 NO_VALUE = "—"       # shown when a value is missing; never a made-up number
 
 HOUR_CHOICES = [1, 2, 3, 5, 8]
@@ -1077,6 +1082,12 @@ def player_page():
 # ---------------------------------------------------------------------------
 # Start
 # ---------------------------------------------------------------------------
+
+# Two locks in front of every page and live connection (they must be added before
+# ui.run). Requests addressed to any other name are refused, which stops "DNS
+# rebinding" web pages; requests started by another website are refused too.
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=ALLOWED_HOSTS, www_redirect=False)
+app.add_middleware(OriginLock, allowed_origins=allowed_origins(ALLOWED_HOSTS, PORT))
 
 app.add_static_files("/static", HERE / "static")
 # "?v=..." is the stylesheet's last-change time: when the file changes, the address

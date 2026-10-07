@@ -172,6 +172,10 @@ python3 tools/install_desktop.py --remove
 
 - The app only listens on your own computer (127.0.0.1), so other devices on your
   network can't reach it. One person per copy.
+- It also answers only when addressed as `127.0.0.1` or `localhost`, and refuses
+  requests that other websites start, so a web page you visit can't use the
+  planner behind your back. Such a request gets a short "Invalid host header" or
+  "Refused" message instead.
 - Each player is fetched from RuneMetrics once while the app runs, and again only
   when you press **Refresh**.
 - Your answers, chosen goal and stat snapshots stay on your computer, in

@@ -5,9 +5,13 @@ hands to an app): nothing starts a server or uses the network.
 """
 
 import asyncio
+import re
 import unittest
+from pathlib import Path
 
 import host_lock
+
+PROJECT = Path(__file__).resolve().parent.parent
 
 ALLOWED = host_lock.allowed_origins(["127.0.0.1", "localhost"], 8080)
 FOREIGN = b"http://evil.example"
@@ -120,6 +124,25 @@ class LifespanTests(unittest.TestCase):
     def test_start_up_and_shutdown_pass_straight_through(self):
         scope = {"type": "lifespan"}
         self.assertEqual(run_lock(scope), ([scope], []))
+
+class AppWiringTests(unittest.TestCase):
+    """app.py can't be imported here (it starts NiceGUI), so read it as text."""
+
+    def setUp(self):
+        self.text = (PROJECT / "app.py").read_text(encoding="utf-8")
+
+    def test_allowed_hosts_are_this_computers_two_names(self):
+        self.assertRegex(self.text, r'(?m)^ALLOWED_HOSTS = \[HOST, "localhost"\]')
+
+    def test_host_lock_is_switched_on_before_ui_run(self):
+        line = "app.add_middleware(TrustedHostMiddleware, allowed_hosts=ALLOWED_HOSTS, www_redirect=False)"
+        self.assertRegex(self.text, r"(?m)^" + re.escape(line))   # at a line's start: a commented-out line doesn't count
+        self.assertLess(self.text.index(line), self.text.index("ui.run("))
+
+    def test_origin_lock_is_switched_on_with_port(self):
+        line = "app.add_middleware(OriginLock, allowed_origins=allowed_origins(ALLOWED_HOSTS, PORT))"
+        self.assertRegex(self.text, r"(?m)^" + re.escape(line))   # at a line's start: a commented-out line doesn't count
+        self.assertLess(self.text.index(line), self.text.index("ui.run("))
 
 
 if __name__ == "__main__":

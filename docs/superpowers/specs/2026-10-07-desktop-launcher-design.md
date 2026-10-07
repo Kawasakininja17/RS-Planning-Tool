@@ -133,17 +133,31 @@ WantedBy=default.target
 `Categories=Game;`, and two actions, **Restart RS3 Planner** (`--restart`) and
 **Stop RS3 Planner** (`--stop`).
 
-**Quoting.** Each file type has its own rules for paths with spaces or special characters.
-In `.desktop` `Exec` lines, every argument is wrapped in double quotes, with `"`, `` ` ``, `$`
-and `\` escaped by a backslash, and a literal `%` written as `%%`. In the systemd `ExecStart`
-line, each path is wrapped in double quotes, with `"` and `\` escaped by a backslash and `%`
-written as `%%`. `WorkingDirectory`, `Icon` and the other plain-value lines take the path as
-written. The installer refuses a project path containing a newline.
+**Folder names that are refused.** If the project folder's path contains `%`, `\` or a line
+break, the installer writes nothing and says: "Rename the project folder so its path has no
+%, \ or line break, then run the install again." Why (decided with Chris 2026-10-07, after
+reading the official documents): systemd's manual doesn't say whether `%` is special in
+`WorkingDirectory=`, so any handling would be a guess; and a `\` in a launcher path must be
+written as four backslashes (freedesktop Desktop Entry spec, "The Exec key"), easy to get
+subtly wrong for a case Linux folder names practically never have.
+
+**Quoting** (for everything else, including spaces, `"`, `$`, `'` and `` ` ``):
+
+- `.desktop` `Exec` lines (freedesktop Desktop Entry spec, "The Exec key"): every argument is
+  wrapped in double quotes, with `"`, `` ` `` and `$` escaped by a backslash; then, because the
+  file's general string rule is applied first, every backslash is doubled. So a real `$` is
+  written `\\$` and a real `"` is written `\\"`.
+- systemd `ExecStart` (systemd.service(5) "Command lines", systemd.syntax(7) "Quoting"): each
+  path is wrapped in double quotes, with `"` escaped as `\"`, and a real `$` written as `$$`.
+- `WorkingDirectory`, `Icon` and the other plain-value lines take the path as written.
 
 **After writing**, the installer runs:
 
 1. `systemctl --user daemon-reload` (reread the settings)
-2. `systemctl --user enable --now rs3-planner` (start it now, and at every login)
+2. `systemctl --user enable rs3-planner` (start it at every login)
+3. `systemctl --user restart rs3-planner` (start it now; on a re-install this also makes a
+   changed service file take effect, which `enable --now` would not do for a service that is
+   already running)
 
 and prints what it wrote, whether the app now answers, and how to undo it.
 
@@ -151,6 +165,11 @@ and prints what it wrote, whether the app now answers, and how to undo it.
 
 - **No `.venv`:** if `<project>/.venv/bin/python` is missing, it writes nothing and says to do
   the README's one-time setup first.
+- **A copy started from a terminal is running:** if something already answers at
+  `http://127.0.0.1:8080` while the `rs3-planner` service is not running, it writes nothing and
+  says: "Something is already answering at http://127.0.0.1:8080, most likely the app started
+  from a terminal. Stop it (Ctrl+C in that terminal), then run the install again." Otherwise the
+  new service would fail on the busy port three times and give up.
 - **Already installed:** a file with identical contents is left alone ("already up to date").
   A file with different contents (for example, from the project's old folder) is replaced, and
   it says so.
@@ -166,6 +185,11 @@ and prints what it wrote, whether the app now answers, and how to undo it.
 - "The app answers" means an HTTP request to `http://127.0.0.1:8080/` gets any reply within
   2 seconds. Any status code counts (the home page redirects to `/player` when no player is
   chosen); a refused connection or a timeout doesn't.
+- Before starting or restarting, the opener runs `systemctl --user reset-failed rs3-planner`.
+  After three failed starts Ubuntu refuses further starts for a minute ("start request repeated
+  too quickly"); this clears that, so a click right after fixing a broken data file works.
+- The "didn't start" notification quotes only app lines logged since this click
+  (`journalctl --user -t rs3-planner --since <click time>`), never lines from earlier runs.
 - The browser is opened with `xdg-open http://127.0.0.1:8080`.
 - Notifications use `notify-send`. If `notify-send` itself is missing or fails, the opener
   prints the same message and exits, without crashing.
@@ -194,13 +218,14 @@ Standard library only; never touch the real home folder, never run `systemctl`,
 **Installer:**
 
 - the service and launcher texts for a plain project path contain the expected lines
-- a project path with spaces (and one with `%`, `"` and `$`) is quoted correctly in both files
-- install writes exactly the two files into a scratch home folder and calls `daemon-reload`
-  then `enable --now` (recorded by a fake runner)
+- a project path with spaces, and one with `"`, `$`, `'` and `` ` ``, is quoted correctly in both files
+- a project path with `%`, with `\`, or with a line break is refused before anything is written
+- install writes exactly the two files into a scratch home folder and calls `daemon-reload`,
+  `enable`, then `restart` (recorded by a fake runner)
+- something already answering while the service isn't running: nothing is written or run
 - a second install with identical files reports "already up to date"; a changed file is
   replaced and reported
 - no `.venv/bin/python`: nothing is written and nothing is run
-- a project path containing a newline is refused
 - a failing fake `systemctl` stops the install with its message
 - `--remove` deletes both files and calls `disable --now` then `daemon-reload`; with nothing
   installed it still finishes cleanly
@@ -221,7 +246,10 @@ Standard library only; never touch the real home folder, never run `systemctl`,
 
 1. All tests pass (the 146 existing plus the new ones); `python3 check_methods.py` is still clean.
 2. `python3 tools/install_desktop.py --show` for the real project folder, shown to Chris
-   before he installs.
+   before he installs. Both files, written into a scratch folder (not installed), pass Ubuntu's
+   own checkers: `systemd-analyze --user verify` for the service and `desktop-file-validate` for
+   the launcher. The same checks are repeated for a scratch project path with spaces, `"`, `$`,
+   `'` and `` ` ``.
 3. **Chris** runs the install. Then, read-only: `systemctl --user is-active rs3-planner`,
    `ss -ltn` shows the app on `127.0.0.1:8080` only, and the Home page loads.
 4. Chris clicks the icon and tries Restart and Stop (or, with his OK, Claude clicks it using

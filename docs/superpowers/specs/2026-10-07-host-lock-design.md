@@ -119,7 +119,8 @@ copies on 8091 all keep working.
 
 | Who's asking | Answer |
 |---|---|
-| Wrong Host name (DNS rebinding, or any other name) | 400, Starlette's fixed text `Invalid host header` |
+| Wrong Host name (DNS rebinding, or any other name), no foreign Origin | 400, Starlette's fixed text `Invalid host header` |
+| Wrong Host name **and** a foreign Origin (e.g. a rebinding page's live connection) | 403 from the Origin guard, which checks first (`add_middleware` puts the guard added last at the front) |
 | Foreign Origin on a page request | 403, `Refused: this request came from another website.` |
 | Foreign Origin on the live connection | 403 during the handshake; the other site sees a failed connection |
 

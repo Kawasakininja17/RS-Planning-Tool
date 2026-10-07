@@ -13,9 +13,11 @@ your back, so the request is refused before the app sees it.
 Requests with no Origin label pass: typing the address, clicking a link, the
 app icon's "is it running?" check and curl don't send one.
 
-This is the second of two locks, both switched on in app.py. The first,
-Starlette's TrustedHostMiddleware, refuses requests addressed to the app by
-any other name, which stops "DNS rebinding" web pages.
+This is one of two locks, both switched on in app.py. The other, Starlette's
+TrustedHostMiddleware, refuses requests addressed to the app by any other
+name, which stops "DNS rebinding" web pages. This one checks each request
+first: app.add_middleware puts the guard added last at the front of the line.
+So a request that fails both checks gets this lock's 403, not the Host lock's 400.
 
 Standard library only, so the tests can load it without NiceGUI.
 """

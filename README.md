@@ -18,6 +18,27 @@ touches or controls the game client, and it never asks for a password.
 Plans assume a regular account. Ironman accounts aren't supported yet. Plans
 may suggest training or money methods an ironman can't use.
 
+## Windows app (for clan members)
+
+No Python needed: a ready-to-run Windows version is on the
+[Releases page](https://github.com/Kawasakininja17/RS-Planning-Tool/releases).
+
+1. Download `RS3-Planner-<date>.zip` from the newest release.
+2. Extract the whole zip (right-click it, **Extract All…**). Don't run the
+   program from inside the zip: it needs the `_internal` folder beside it.
+3. Open the extracted `RS3 Planner` folder and double-click **RS3 Planner.exe**.
+   A black window opens, then the planner opens in your web browser.
+4. Windows may warn you first, because the program is new and isn't signed by a
+   company. That doesn't mean it's harmful; the code is all on this page.
+5. Keep the black window open while you use the planner. Close it to stop the
+   app. Double-clicking again while it runs just opens it in the browser.
+
+Your players, answers and stats history are saved in your own Windows folder
+`%LOCALAPPDATA%\RS3 Planner` (the black window shows the full path), not in the
+app's folder. To update: delete the old `RS3 Planner` folder and extract the new
+zip; your data stays. If the black window shows a problem, it waits for you to
+read it: press Enter to close it.
+
 ## Install
 
 ### You'll need
@@ -305,6 +326,39 @@ python3 check_methods.py
 
 checks all three data files (methods, unlocks, quests) and stops with a clear
 list of problems if anything is broken. Run it after every edit.
+
+## Building the Windows app
+
+The Windows app is this same program packed by NiceGUI's `nicegui-pack` (built on
+PyInstaller) into one folder with its own Python. A Windows program can only be
+built on Windows, so GitHub builds it: on the repository's **Actions** tab, pick
+**Build Windows app**, then **Run workflow**. It runs the tests, `tools/build_exe.py`
+and `tools/smoke_test_exe.py` on a Windows machine and keeps the zip and its contents
+list on the run's page. Releases are made by hand from that zip.
+
+The same build runs on Linux (for trying it out; it makes a Linux program), with its
+own toolbox so the app's `.venv/` stays as it is:
+
+```bash
+python3 -m venv .venv-build
+```
+
+```bash
+.venv-build/bin/pip install -r requirements-build.txt
+```
+
+```bash
+.venv-build/bin/python tools/build_exe.py
+```
+
+```bash
+python3 tools/smoke_test_exe.py
+```
+
+`tools/build_exe.py` packs only `data/methods.json`, `data/quests.json`,
+`data/unlocks.json` and `static/`, never `data/players/`, and stops if any player
+file or name ends up inside. The Windows icon (`static/icons/app-icon.ico`) was made
+once from `app-icon.svg` with `rsvg-convert` (Ubuntu package `librsvg2-bin`) and Pillow.
 
 ## Tests
 

@@ -1784,6 +1784,8 @@ Expected: only scripts, `*.sha` and `build-output.txt` left in `$W`; `git status
 
 ---
 
+> **Changed during Task 5 (2026-10-09, approved by Chris):** reopening right after closing moved the app to 8096 (NiceGUI's `find_open_port` calls a port busy while TIME-WAIT leftovers linger). `bundle.something_answers(port)` was added and `choose_port(answers, listening, find_free)` now uses 8095 whenever nothing listens there; `find_free(8096, 8999)` only when another program does. Tests: `SomethingAnswersTests`, `ChoosePortTests`, `AppStartTests.test_port_choice_asks_whether_anything_listens` (291 tests in total from here on).
+
 ### Task 6: README and the GitHub workflow; the first Windows build
 
 **Files:**

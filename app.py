@@ -44,7 +44,8 @@ from nicegui import app, native, run, ui
 
 from account import level_table, skill_rows
 from bundle import (
-    LAST_PORT, PREFERRED_PORT, choose_port, is_bundled, planner_answers, stop, user_data_dir, version_text,
+    LAST_PORT, PREFERRED_PORT, choose_port, is_bundled, planner_answers, something_answers, stop, user_data_dir,
+    version_text,
 )
 from check_methods import load_methods, load_quest_files
 from host_lock import OriginLock, allowed_origins
@@ -1119,7 +1120,7 @@ def start_port():
     folder.mkdir(parents=True, exist_ok=True)
     print(f"Your saved data: {folder}", flush=True)
     try:
-        already_running, port = choose_port(planner_answers, native.find_open_port)
+        already_running, port = choose_port(planner_answers, something_answers, native.find_open_port)
     except OSError:   # NiceGUI's search found no free port at all
         stop(f"RS3 Planner found no free port between {PREFERRED_PORT} and {LAST_PORT}, so it can't start.")
     if already_running:

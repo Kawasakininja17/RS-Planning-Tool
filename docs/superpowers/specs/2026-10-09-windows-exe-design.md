@@ -121,6 +121,10 @@ Answers "am I a bundle?" questions in one place, so tests can use it directly (l
 - The port choice: given the preferred port (8095), returns either "already running" or the port to
   use (8095 if free, otherwise `find_open_port()`). Its outside effects are passed in, so tests use
   fakes.
+  *Changed during the Linux rehearsal (2026-10-09):* "free" means nothing answers on 8095
+  (`something_answers`, a plain connection attempt). NiceGUI's `find_open_port()` called 8095 busy
+  for about a minute after a copy closed (leftover TIME-WAIT connections), so a quick reopen moved
+  to 8096. `find_open_port(8096, 8999)` is now used only when another program listens on 8095.
 
 ### `players.py`
 

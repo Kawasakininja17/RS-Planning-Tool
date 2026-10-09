@@ -11,6 +11,7 @@ answers the questions that only matter there:
                      bundle: every new version replaces that folder.)
   version_text()     which build is this? (the build writes it into the bundle)
   planner_answers()  is RS3 Planner already running on this port?
+  something_answers() is any program at all listening on this port?
   choose_port()      which port should this copy use, if any?
   stop()             say what went wrong and wait, so the window doesn't vanish
 
@@ -23,6 +24,7 @@ Standard library only, so the tests can load it without NiceGUI.
 import http.client
 import os
 import re
+import socket
 import sys
 import urllib.request
 from pathlib import Path
@@ -108,15 +110,33 @@ def planner_answers(port, fetch=read_page):
     return page is not None and TITLE.search(page) is not None
 
 
-def choose_port(answers, find_free, preferred=PREFERRED_PORT):
+def something_answers(port):
+    """
+    True if any program accepts a connection on this port of this computer.
+    Nothing is sent: it only knocks. Connections left over from a copy that has
+    just closed ("TIME-WAIT", about a minute on Linux) don't answer, so they
+    don't count: the web server can start on the port despite them.
+    """
+    try:
+        with socket.create_connection(("127.0.0.1", port), timeout=2):
+            return True
+    except OSError:   # refused or timed out: nothing listens there
+        return False
+
+
+def choose_port(answers, listening, find_free, preferred=PREFERRED_PORT):
     """
     Which port this copy should use, as (already_running, port):
       (True, 8095)   RS3 Planner already answers on 8095: open that, don't start a second copy
-      (False, 8095)  8095 is free: use it
-      (False, 8096)  another program has 8095: use the first free port after it
-    answers(port) is planner_answers; find_free(first, last) is NiceGUI's
-    native.find_open_port. Both are passed in so the tests can use fakes.
+      (False, 8095)  nothing listens on 8095 (also right after a copy closed): use it
+      (False, 8096)  another program listens on 8095: use the first free port after it
+    answers(port) is planner_answers, listening(port) is something_answers, and
+    find_free(first, last) is NiceGUI's native.find_open_port. They are passed in
+    so the tests can use fakes. (NiceGUI's search alone isn't used for 8095: its
+    test calls a port busy while a just-closed copy's leftovers linger.)
     """
     if answers(preferred):
         return True, preferred
-    return False, find_free(preferred, LAST_PORT)
+    if not listening(preferred):
+        return False, preferred
+    return False, find_free(preferred + 1, LAST_PORT)

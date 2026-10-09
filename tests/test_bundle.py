@@ -199,25 +199,63 @@ class PlannerAnswersTests(unittest.TestCase):
         self.assertFalse(bundle.planner_answers(8095, lambda url: page))
 
 
+class SomethingAnswersTests(unittest.TestCase):
+    """something_answers: does any program accept a connection on this port? (127.0.0.1 only)"""
+
+    def test_a_listening_program_answers(self):
+        with socket.socket() as server:
+            server.bind(("127.0.0.1", 0))
+            server.listen(1)
+            self.assertTrue(bundle.something_answers(server.getsockname()[1]))
+
+    def test_nothing_listening_means_no(self):
+        with socket.socket() as sock:
+            sock.bind(("127.0.0.1", 0))
+            port = sock.getsockname()[1]
+        self.assertFalse(bundle.something_answers(port))
+
+    def test_leftovers_of_a_closed_copy_mean_no(self):
+        # Like closing the app and double-clicking it again at once: the closed copy's
+        # connections linger for about a minute ("TIME-WAIT"), but nothing listens.
+        server = socket.socket()
+        server.bind(("127.0.0.1", 0))
+        server.listen(1)
+        port = server.getsockname()[1]
+        client = socket.create_connection(("127.0.0.1", port))
+        conn, _ = server.accept()
+        conn.close()     # the app's side hangs up first, so the leftover sits on its port
+        server.close()
+        client.close()
+        try:
+            with socket.socket() as probe:   # the plain test NiceGUI's find_open_port makes
+                probe.bind(("localhost", port))
+            self.skipTest("this system left no leftover to test against")
+        except OSError:
+            pass   # the leftover is there: NiceGUI's test would call the port busy
+        self.assertFalse(bundle.something_answers(port))
+
+
 class ChoosePortTests(unittest.TestCase):
+    @staticmethod
+    def no_search(first, last):
+        raise AssertionError("no port search expected")
+
     def test_already_running_on_8095(self):
-        def find_free(first, last):
-            raise AssertionError("no port search when RS3 Planner already runs")
+        self.assertEqual(bundle.choose_port(lambda port: True, lambda port: True, self.no_search), (True, 8095))
 
-        self.assertEqual(bundle.choose_port(lambda port: True, find_free), (True, 8095))
+    def test_nothing_listening_on_8095_uses_it(self):
+        # Also right after a copy closed: its leftovers don't count (see SomethingAnswersTests).
+        self.assertEqual(bundle.choose_port(lambda port: False, lambda port: False, self.no_search), (False, 8095))
 
-    def test_8095_free(self):
+    def test_8095_taken_by_another_program(self):
         searched = []
 
         def find_free(first, last):
             searched.append((first, last))
-            return first
+            return 8096
 
-        self.assertEqual(bundle.choose_port(lambda port: False, find_free), (False, 8095))
-        self.assertEqual(searched, [(8095, 8999)])
-
-    def test_8095_taken_by_another_program(self):
-        self.assertEqual(bundle.choose_port(lambda port: False, lambda first, last: 8096), (False, 8096))
+        self.assertEqual(bundle.choose_port(lambda port: False, lambda port: True, find_free), (False, 8096))
+        self.assertEqual(searched, [(8096, 8999)])
 
 
 class AppStartTests(unittest.TestCase):
@@ -240,6 +278,11 @@ class AppStartTests(unittest.TestCase):
         line = 'ui.run(host=HOST, port=port, title="RS3 Planner", dark=True, reload=False, show=is_bundled())'
         self.assertTrue(re.search(r"(?m)^ +" + re.escape(line), self.text),
                         "ui.run must use the chosen port and open the browser only in a bundle")
+
+    def test_port_choice_asks_whether_anything_listens(self):
+        self.assertTrue(re.search(r"(?m)^ +already_running, port = choose_port\(planner_answers, something_answers, "
+                                  r"native\.find_open_port\)$", self.text),
+                        "start_port() must tell choose_port how to see whether anything listens on 8095")
 
     def test_locks_follow_the_chosen_port(self):
         self.assertTrue(re.search(r"(?m)^        switch_on_locks\(port\)$", self.text),

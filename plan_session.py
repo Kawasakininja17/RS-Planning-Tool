@@ -22,7 +22,7 @@ How to run (from the project folder):
 """
 
 import argparse   # reads options like --hours 5 from the command line
-import math       # floor() and ceil() for the why line
+import math       # floor() for the why line's percentage
 import sys        # stops with a clear message if the answers file is broken
 import textwrap   # wraps long notes onto several lines
 
@@ -205,6 +205,16 @@ def percent_text(fraction):
     return f"{math.floor(fraction * 1000) / 10:.1f}%"
 
 
+def xp_left_text(xp_left):
+    """
+    e.g. 1188.2 -> '1,188'. Rounded exactly like level_change_text's "XP away", so
+    path A's why line never disagrees with the "N hours" line above it. Less than
+    half an XP would round to '0', which reads as "already there": say 'under 1'.
+    """
+    text = f"{xp_left:,.0f}"
+    return "under 1" if text == "0" else text
+
+
 def split_ruled_out(ruled_out):
     """
     Returns (blocked, finished_count). Methods you've finished the skill for
@@ -245,9 +255,8 @@ def build_plan(methods, account, max_minutes, answers):
 
     if path_a:
         closest = path_a["_closest"]
-        # XP left is rounded UP: 0.3 XP short reads "1 XP left", never "0 XP left".
         why_a = (f"{closest['skill']} is {percent_text(closest['fraction'])} of the way to "
-                 f"{closest['next_level']} ({math.ceil(closest['xp_left']):,} XP left): "
+                 f"{closest['next_level']} ({xp_left_text(closest['xp_left'])} XP left): "
                  "the furthest of your skills with a ready method.")
     else:
         why_a = ""

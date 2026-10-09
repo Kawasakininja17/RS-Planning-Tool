@@ -324,9 +324,17 @@ class WhyLineTests(unittest.TestCase):
         line = "Smithing is 54.7% of the way to 96 (413,019 XP left): the furthest of your skills with a ready method."
         self.assertRegex(self.why_a(500_000), r"(?m)^" + re.escape(line) + "$")
 
+    def test_why_line_matches_the_hours_line(self):
+        # 413,018.2 XP short: both lines say 413,018 (rounding up would say 413,019
+        # here, one line below the hours line's 413,018).
+        line = "Smithing is 54.7% of the way to 96 (413,018 XP left): the furthest of your skills with a ready method."
+        self.assertRegex(self.why_a(500_000.8), r"(?m)^" + re.escape(line) + "$")
+        account = part_way(make_account(95), "Smithing", 95, 500_000.8)
+        self.assertIn("(96 is 413,018 XP away)", level_change_text(account, "Smithing", 0, 0))
+
     def test_why_line_never_says_0_xp_left(self):
-        # 0.3 XP short: rounds up to 1 XP, and the percent rounds down.
-        line = "Smithing is 99.9% of the way to 96 (1 XP left): the furthest of your skills with a ready method."
+        # 0.3 XP short would round to "0": it says "under 1" instead, and the percent rounds down.
+        line = "Smithing is 99.9% of the way to 96 (under 1 XP left): the furthest of your skills with a ready method."
         self.assertRegex(self.why_a(913_018.7), r"(?m)^" + re.escape(line) + "$")
 
 

@@ -106,6 +106,10 @@ From the code and data (2026-10-09, at commit `aee3672`):
 - **Why line for A**, e.g.:
   `Defence is 83.9% of the way to 93 (109,284 XP left): the furthest of your skills with a ready method.`
   B's and C's why lines don't change.
+- **`xp_left_text(xp_left)`** (added 2026-10-09 after the before/after check): the why
+  line's "XP left" is rounded exactly like the "N hours" line's "XP away" just above it,
+  so the two never disagree (rounding up had shown 1,189 under a line saying 1,188). When
+  that rounding would show `0`, it says `under 1` instead.
 - **`level_change_text`**: uses `level_table(skill)` and `level_from_xp(…, skill)`, so the
   "what N hours gets you" line is right for Invention too. Its wording doesn't change.
 - **Module docstring** (line 10): `A: finish something  - the ready method for the skill furthest through its current level`.

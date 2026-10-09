@@ -5,6 +5,7 @@ passed in as fakes. The read_page tests use tiny servers on 127.0.0.1 only.
 """
 
 import io
+import re
 import socket
 import sys
 import tempfile
@@ -217,6 +218,32 @@ class ChoosePortTests(unittest.TestCase):
 
     def test_8095_taken_by_another_program(self):
         self.assertEqual(bundle.choose_port(lambda port: False, lambda first, last: 8096), (False, 8096))
+
+
+class AppStartTests(unittest.TestCase):
+    """app.py can't be imported here (it starts NiceGUI), so read it as text."""
+
+    def setUp(self):
+        self.text = (PROJECT / "app.py").read_text(encoding="utf-8")
+
+    def test_freeze_support_comes_first_in_the_main_guard(self):
+        # Comment lines may sit between the guard and the call; no other line may.
+        self.assertTrue(re.search(r'(?m)^if __name__ in \{"__main__", "__mp_main__"\}:\n(?:    #.*\n)*    freeze_support\(\)',
+                                  self.text), "freeze_support() must be the first statement under the main guard")
+
+    def test_from_source_the_port_stays_8080(self):
+        self.assertTrue(re.search(r"(?m)^PORT = 8080$", self.text), "PORT must stay 8080")
+        self.assertTrue(re.search(r"(?m)^    if not is_bundled\(\):\n        return PORT$", self.text),
+                        "start_port() must return PORT when not bundled")
+
+    def test_only_the_bundle_opens_the_browser(self):
+        line = 'ui.run(host=HOST, port=port, title="RS3 Planner", dark=True, reload=False, show=is_bundled())'
+        self.assertTrue(re.search(r"(?m)^ +" + re.escape(line), self.text),
+                        "ui.run must use the chosen port and open the browser only in a bundle")
+
+    def test_locks_follow_the_chosen_port(self):
+        self.assertTrue(re.search(r"(?m)^        switch_on_locks\(port\)$", self.text),
+                        "the locks must be switched on with the chosen port")
 
 
 if __name__ == "__main__":

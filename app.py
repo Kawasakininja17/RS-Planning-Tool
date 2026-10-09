@@ -25,18 +25,27 @@ then open http://127.0.0.1:8080 in your browser. Stop it with Ctrl+C.
 It listens on 127.0.0.1 only, so other devices on your network can't reach it.
 It also answers only to the names 127.0.0.1 and localhost, and refuses requests
 that other websites start (see host_lock.py), so web pages can't use it.
+
+As the Windows app (a bundle made by tools/build_exe.py) it saves data in the
+user's own app-data folder, uses port 8095 and opens the browser by itself
+(see bundle.py). Run from the project folder, none of that changes.
 """
 
 import copy
 import datetime
 import re
+import webbrowser   # the Windows app opens an already-running copy in the browser
+from multiprocessing import freeze_support
 from pathlib import Path
 
 from fastapi.middleware.trustedhost import TrustedHostMiddleware   # refuses requests for any other name
 from fastapi.responses import RedirectResponse   # sends a page to /player when no player is chosen
-from nicegui import app, run, ui
+from nicegui import app, native, run, ui
 
 from account import level_table, skill_rows
+from bundle import (
+    LAST_PORT, PREFERRED_PORT, choose_port, is_bundled, planner_answers, stop, user_data_dir, version_text,
+)
 from check_methods import load_methods, load_quest_files
 from host_lock import OriginLock, allowed_origins
 from plan_session import also_text, build_plan, path_lines, split_ruled_out
@@ -1084,11 +1093,48 @@ def player_page():
 # Start
 # ---------------------------------------------------------------------------
 
-# Two locks in front of every page and live connection (they must be added before
-# ui.run). Requests addressed to any other name are refused, which stops "DNS
-# rebinding" web pages; requests started by another website are refused too.
-app.add_middleware(TrustedHostMiddleware, allowed_hosts=ALLOWED_HOSTS, www_redirect=False)
-app.add_middleware(OriginLock, allowed_origins=allowed_origins(ALLOWED_HOSTS, PORT))
+def switch_on_locks(port):
+    """
+    Two locks in front of every page and live connection (they must be added before
+    ui.run). Requests addressed to any other name are refused, which stops "DNS
+    rebinding" web pages; requests started by another website are refused too.
+    The second lock is built from the port the app really uses.
+    """
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=ALLOWED_HOSTS, www_redirect=False)
+    app.add_middleware(OriginLock, allowed_origins=allowed_origins(ALLOWED_HOSTS, port))
+
+
+def start_port():
+    """
+    The port to listen on, or None when this copy shouldn't start.
+    From the project folder: PORT (8080), exactly as always.
+    As the Windows app (a bundle): 8095, or the first free port after it when
+    another program has 8095. If RS3 Planner already runs on 8095 (a second
+    double-click), the browser is opened there instead and None is returned.
+    """
+    if not is_bundled():
+        return PORT
+    print(version_text() or "RS3 Planner (version unknown)", flush=True)
+    folder = user_data_dir()
+    folder.mkdir(parents=True, exist_ok=True)
+    print(f"Your saved data: {folder}", flush=True)
+    try:
+        already_running, port = choose_port(planner_answers, native.find_open_port)
+    except OSError:   # NiceGUI's search found no free port at all
+        stop(f"RS3 Planner found no free port between {PREFERRED_PORT} and {LAST_PORT}, so it can't start.")
+    if already_running:
+        print("RS3 Planner is already running: opening it in your browser.", flush=True)
+        webbrowser.open(f"http://{HOST}:{port}/")
+        return None
+    if port != PREFERRED_PORT:
+        print(f"Port {PREFERRED_PORT} is used by another program, so RS3 Planner uses port {port}.", flush=True)
+    return port
+
+
+def say_running():
+    """Shown in the Windows app's black window once the app answers."""
+    print("RS3 Planner is running. Keep this window open; close it to stop the app.", flush=True)
+
 
 app.add_static_files("/static", HERE / "static")
 # "?v=..." is the stylesheet's last-change time: when the file changes, the address
@@ -1097,8 +1143,17 @@ CSS_VERSION = int((HERE / "static" / "app.css").stat().st_mtime)
 ui.add_head_html(f'<link rel="stylesheet" href="/static/app.css?v={CSS_VERSION}">', shared=True)
 
 if __name__ in {"__main__", "__mp_main__"}:
-    try:
-        ui.run(host=HOST, port=PORT, title="RS3 Planner", dark=True, reload=False, show=False)
-    except KeyboardInterrupt:
-        # Ctrl+C is the normal way to stop the app; say so instead of printing a traceback.
-        print("\nRS3 Planner stopped.")
+    # First: in the Windows app, NiceGUI's helper processes start this same program,
+    # and this call makes them do their job instead of starting the whole app again
+    # (PyInstaller's "Common Issues and Pitfalls" page). Run from source it does nothing.
+    freeze_support()
+    port = start_port()
+    if port is not None:
+        switch_on_locks(port)
+        if is_bundled():
+            app.on_startup(say_running)
+        try:
+            ui.run(host=HOST, port=port, title="RS3 Planner", dark=True, reload=False, show=is_bundled())
+        except KeyboardInterrupt:
+            # Ctrl+C is the normal way to stop the app; say so instead of printing a traceback.
+            print("\nRS3 Planner stopped.")

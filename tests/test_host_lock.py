@@ -136,12 +136,14 @@ class AppWiringTests(unittest.TestCase):
 
     def test_host_lock_is_switched_on_before_ui_run(self):
         line = "app.add_middleware(TrustedHostMiddleware, allowed_hosts=ALLOWED_HOSTS, www_redirect=False)"
-        self.assertRegex(self.text, r"(?m)^" + re.escape(line))   # at a line's start: a commented-out line doesn't count
+        # Inside switch_on_locks, at a line's start: a commented-out line doesn't count.
+        self.assertTrue(re.search(r"(?m)^    " + re.escape(line), self.text), "the Host lock must be switched on")
         self.assertLess(self.text.index(line), self.text.index("ui.run("))
 
-    def test_origin_lock_is_switched_on_with_port(self):
-        line = "app.add_middleware(OriginLock, allowed_origins=allowed_origins(ALLOWED_HOSTS, PORT))"
-        self.assertRegex(self.text, r"(?m)^" + re.escape(line))   # at a line's start: a commented-out line doesn't count
+    def test_origin_lock_is_switched_on_with_the_chosen_port(self):
+        line = "app.add_middleware(OriginLock, allowed_origins=allowed_origins(ALLOWED_HOSTS, port))"
+        self.assertTrue(re.search(r"(?m)^    " + re.escape(line), self.text),
+                        "the Origin lock must be built from the port the app really uses")
         self.assertLess(self.text.index(line), self.text.index("ui.run("))
 
 

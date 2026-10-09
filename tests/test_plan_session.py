@@ -4,7 +4,7 @@ import copy
 import re
 import unittest
 
-from account import level_table
+from account import LEVEL_XP, level_table
 from plan_session import (
     ALREADY_120, OUTGROWN, also_text, build_plan, check_method_for_session, closest_skill,
     level_change_text, percent_text, pick_paths, runner_ups, split_ruled_out,
@@ -310,6 +310,15 @@ class PercentTextTests(unittest.TestCase):
         self.assertEqual(percent_text(0.5), "50.0%")
         self.assertEqual(percent_text(0.29), "29.0%")
         self.assertEqual(percent_text(0.579), "57.9%")
+
+    def test_exact_boundary_on_real_xp(self):
+        # Smithing 90 at 5,457,631.8 XP is exactly 20.0% of the way to 91, but the
+        # computer's arithmetic makes the fraction 0.19999999999999968.
+        account = part_way(make_account(95), "Smithing", 90, 111_299.8)
+        self.assertEqual(percent_text(closest_skill({"skill": "Smithing"}, account)["fraction"]), "20.0%")
+        # The widest level (119 -> 120), 0.1 XP short: still 99.9%, never 100.0%.
+        account = part_way(make_account(95), "Woodcutting", 119, LEVEL_XP[119] - LEVEL_XP[118] - 0.1)
+        self.assertEqual(percent_text(closest_skill({"skill": "Woodcutting"}, account)["fraction"]), "99.9%")
 
 
 class WhyLineTests(unittest.TestCase):

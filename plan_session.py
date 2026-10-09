@@ -201,8 +201,12 @@ def also_text(method):
 
 
 def percent_text(fraction):
-    """e.g. 0.83949 -> '83.9%'. Rounded DOWN, so a level never shows 100.0% before it's reached."""
-    return f"{math.floor(fraction * 1000) / 10:.1f}%"
+    """
+    e.g. 0.83949 -> '83.9%'. Rounded DOWN, so a level never shows 100.0% before it's
+    reached. The computer's arithmetic can leave an exact 20% as 19.99999999999997%,
+    so it is first tidied to 6 decimal places, then rounded down.
+    """
+    return f"{math.floor(round(fraction * 1000, 6)) / 10:.1f}%"
 
 
 def xp_left_text(xp_left):

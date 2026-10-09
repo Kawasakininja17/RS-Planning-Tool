@@ -1,6 +1,7 @@
 """The level knowledge (XP tables, level_progress) and the Skills screen's list."""
 
 import unittest
+from pathlib import Path
 
 from account import (
     ELITE_LEVEL_XP, LEVEL_XP, level_from_xp, level_progress, level_table, read_account,
@@ -162,6 +163,17 @@ class ReadAccountTests(unittest.TestCase):
         account = read_account(profile, {"quests": []})
         self.assertEqual(account["skills"]["Invention"]["level"], 79)
         self.assertEqual(account["skills"]["Mining"]["level"], 99)
+
+
+class AppLevelTableTests(unittest.TestCase):
+    """app.py can't be imported here (it starts NiceGUI), so read it as text."""
+
+    def test_app_picks_each_skills_own_xp_table(self):
+        # The Quests screen's "skills still short" bar must use the skill's own table
+        # (Invention's is the elite one), never the normal LEVEL_XP for every skill.
+        text = (Path(__file__).resolve().parent.parent / "app.py").read_text(encoding="utf-8")
+        self.assertFalse("LEVEL_XP" in text, "app.py still uses the normal-only LEVEL_XP table")
+        self.assertTrue("/ level_table(skill)[level - 1]" in text, "the bar doesn't use level_table(skill)")
 
 
 if __name__ == "__main__":

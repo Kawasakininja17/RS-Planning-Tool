@@ -109,9 +109,15 @@ From the code and data (2026-10-09, at commit `aee3672`):
 - **`xp_left_text(xp_left)`** (added 2026-10-09 after the before/after check): the why
   line's "XP left" is rounded exactly like the "N hours" line's "XP away" just above it,
   so the two never disagree (rounding up had shown 1,189 under a line saying 1,188). When
-  that rounding would show `0`, it says `under 1` instead.
+  that rounding would show `0`, it says `under 1` instead. After the final review,
+  `level_change_text` uses it too, so its "XP away" says `under 1` rather than `0` in that
+  same case, on every path (otherwise one panel could read "0 XP away" over "under 1 XP left").
 - **`level_change_text`**: uses `level_table(skill)` and `level_from_xp(…, skill)`, so the
-  "what N hours gets you" line is right for Invention too. Its wording doesn't change.
+  "what N hours gets you" line is right for Invention too. Its wording doesn't change,
+  except `under 1` for less than half an XP (above).
+- **`app.py`, the Quests screen's "skills still short" bar** (added after the final review):
+  divides by `level_table(skill)`, not `LEVEL_XP`, so every level calculation in the app
+  picks the skill's own table.
 - **Module docstring** (line 10): `A: finish something  - the ready method for the skill furthest through its current level`.
 - Titles stay as they are: `PATH A: finish something` here and `PATH_NAMES` in `app.py`.
 

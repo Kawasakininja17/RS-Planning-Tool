@@ -1,5 +1,7 @@
 # Path A: Next Level Implementation Plan
 
+> **Changed after this plan was written (2026-10-09):** the "XP left" round-UP rule below (Global Constraints, Review Focus 1, Task 2's why-line code and `test_why_line_never_says_0_xp_left`, which expected `(1 XP left)`) was replaced during Task 3, as Chris chose. XP left is now rounded like the "N hours" line, and reads `under 1` instead of `0`. `percent_text` also tidies floating-point noise before rounding down. See the spec's `xp_left_text` section; the code and tests are the record.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Path A ("Finish something") picks the skill furthest through its current level (its next level-up), with the next two skills as "Also good"; levels past 99 count up to 120; Invention gets the wiki's elite XP table.

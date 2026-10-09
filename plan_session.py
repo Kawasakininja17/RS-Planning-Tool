@@ -211,9 +211,9 @@ def percent_text(fraction):
 
 def xp_left_text(xp_left):
     """
-    e.g. 1188.2 -> '1,188'. Rounded exactly like level_change_text's "XP away", so
-    path A's why line never disagrees with the "N hours" line above it. Less than
-    half an XP would round to '0', which reads as "already there": say 'under 1'.
+    e.g. 1188.2 -> '1,188'. Used by both path A's why line and level_change_text's
+    "XP away", so the two lines on one path never disagree. Less than half an XP
+    would round to '0', which reads as "already there": say 'under 1'.
     """
     text = f"{xp_left:,.0f}"
     return "under 1" if text == "0" else text
@@ -298,7 +298,7 @@ def level_change_text(account, skill, xp_low, xp_high):
     text = f"{skill} {start_level} -> {after}"
     if start_level < len(table):
         to_next = table[start_level] - now["xp"]   # table[start_level] is the next level
-        text += f" ({start_level + 1} is {to_next:,.0f} XP away)"
+        text += f" ({start_level + 1} is {xp_left_text(to_next)} XP away)"
     return text
 
 

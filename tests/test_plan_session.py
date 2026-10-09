@@ -353,6 +353,12 @@ class LevelChangeTextTests(unittest.TestCase):
         self.assertEqual(level_change_text(account, "Invention", 1_000_000, 2_000_000),
                          "Invention 95 -> 95-96 (96 is 1,369,626 XP away)")
 
+    def test_says_under_1_not_0_xp_away(self):
+        # 0.3 XP short would round to "0 XP away": it says "under 1", like path A's why line.
+        account = part_way(make_account(95), "Smithing", 95, 913_018.7)
+        self.assertEqual(level_change_text(account, "Smithing", 0, 0),
+                         "Smithing 95 -> 95 (96 is under 1 XP away)")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -36,7 +36,7 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware   # refuses req
 from fastapi.responses import RedirectResponse   # sends a page to /player when no player is chosen
 from nicegui import app, run, ui
 
-from account import LEVEL_XP, skill_rows
+from account import level_table, skill_rows
 from check_methods import load_methods, load_quest_files
 from host_lock import OriginLock, allowed_origins
 from plan_session import also_text, build_plan, path_lines, split_ruled_out
@@ -1005,7 +1005,8 @@ def skills_short_panel(goal, account, title):
             with ui.row().classes("row-line"):
                 ui.label(f"{skill} {have} → {level}").classes("heading")
                 ui.label(f"{xp_left:,.0f} XP left").classes("muted")
-            bar(account["skills"][skill]["xp"] / LEVEL_XP[level - 1], thin=True)
+            # Each skill's own XP table (Invention's is the elite one).
+            bar(account["skills"][skill]["xp"] / level_table(skill)[level - 1], thin=True)
 
 
 # ---------------------------------------------------------------------------

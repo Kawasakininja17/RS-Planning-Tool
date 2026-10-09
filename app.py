@@ -922,7 +922,7 @@ def ruled_out_panel(plan):
                     ui.label(method["skill"]).classes("muted small")
                     ui.label("; ".join(reasons)).classes("muted small")
             if finished:
-                ui.label(f"Also skipped: {finished} you've finished (99) or outgrown.").classes("muted small")
+                ui.label(f"Also skipped: {finished} you've finished (120) or outgrown.").classes("muted small")
         reasons_list.set_visibility(False)
 
         def flip():

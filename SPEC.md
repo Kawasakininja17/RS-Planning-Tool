@@ -87,6 +87,8 @@ For 5 hours at 1–2 minutes per click, two paths are ready and the gold path is
 | B: max XP | Ranged 73 (134k to 75), then Defence 92 | AFK combat in the Abyss | 500–600k, depends on gear | Ranged 75 in under an hour; the rest into Defence | Access confirmed (Enter the Abyss) |
 | C: gold | Divination 81 | Vibrant energy (needs 60) | ~5M, unverified | — | Open |
 
+Since 9 October 2026, path A picks the skill furthest through its current level; see docs/superpowers/specs/2026-10-09-path-a-next-level-design.md.
+
 - **Why Ranged first in B:** it closes a Plague's End requirement, so XP buys an unlock.
 - **Mining feeds Smithing:** each elder rune bar takes one light animica, one dark animica and one rune bar.
 - **Ruled out for C:** incandescent energy needs 95 Divination. Elder rune bars give 26 XP each and only speed up at 94 Smithing (2,000 bars/hr there); at 90 expect about 1,300 bars and roughly 35k XP per hour.

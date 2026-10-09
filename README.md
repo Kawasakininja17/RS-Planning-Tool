@@ -144,7 +144,7 @@ python3 tools/install_desktop.py --remove
 3. **Ready to play:** pick how long you can play, **AFK** or **Active**, and (for
    AFK) the most time you can go between clicks. Press **Show my plan**.
 4. **Your plan (AFK)** gives three paths:
-   - **A · Finish something:** your skill closest to 99 that has a method you can do now
+   - **A · Finish something:** your skill furthest through its current level that has a method you can do now
    - **B · Max XP:** the most XP per hour
    - **C · Gold:** the most gp per hour
 
@@ -254,14 +254,14 @@ python3 plan_session.py --user "Some Player"
 It reads your live account, keeps only the methods you can do right now,
 and suggests three paths:
 
-- **A, finish something:** the skill closest to 99 that has a ready method
+- **A, finish something:** the skill furthest through its current level that has a ready method
 - **B, max XP:** the most XP per hour (judged on the low end of each range)
 - **C, gold:** the most gp per hour
 
 Under each path, **Also good** names the next two best methods for that path, so
 you have a choice. Methods whose click time the wiki doesn't give are kept, but
 marked "click time unknown". Everything ruled out is listed at the end with the
-reason; in the app, methods you've finished (99) or outgrown are just counted.
+reason; in the app, methods you've finished (120) or outgrown are just counted.
 
 Some methods need things RuneMetrics can't see, like a smithing autoheater. The
 plan shows "Check: needs …" with **I have it** / **I don't**; your answers are saved

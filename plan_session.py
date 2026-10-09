@@ -7,7 +7,7 @@ Asks how long you can play, how often you can click, and whether the session
 is AFK or active. Reads your live RuneMetrics data, filters data/methods.json
 down to what you can do right now, and picks three paths:
 
-  A: finish something  - the ready method for the skill closest to 99
+  A: finish something  - the ready method for the skill furthest through its current level
   B: max XP            - the ready training method with the most XP per hour
   C: gold              - the ready money method with the most gp per hour
 
@@ -22,10 +22,11 @@ How to run (from the project folder):
 """
 
 import argparse   # reads options like --hours 5 from the command line
+import math       # floor() and ceil() for the why line
 import sys        # stops with a clear message if the answers file is broken
 import textwrap   # wraps long notes onto several lines
 
-from account import LEVEL_XP, level_from_xp, read_account, xp_to_99
+from account import level_from_xp, level_progress, level_table, read_account
 from check_methods import load_methods, load_quest_files
 from players import cli_player, read_answers
 from quest_path import choose_goal, print_quest_path
@@ -37,7 +38,7 @@ DEFAULT_MINUTES = 2
 # The two reasons that mean "you'll never use this method again". They are written
 # by check_method_for_session and recognised by split_ruled_out, so both use these
 # names: rewording one can't quietly stop the other from finding it.
-ALREADY_99 = "already 99"
+ALREADY_120 = "already 120"
 OUTGROWN = "you've outgrown this"
 
 
@@ -96,9 +97,10 @@ def check_method_for_session(method, account, max_minutes, answers):
     elif minutes < max_minutes:
         blocked.append(f"needs a click every {minutes:g} min; your limit is {max_minutes:g}")
 
-    # Training only makes sense for the max cape if a skill is still under 99.
-    if method["type"] == "training" and all(xp_to_99(account, s) == 0 for s in skills):
-        blocked.append(ALREADY_99)
+    # Training only makes sense while a skill it trains still has a next level.
+    # The XP tables stop at 120, so a method is finished once ALL its skills are 120.
+    if method["type"] == "training" and all(level_progress(account, s) is None for s in skills):
+        blocked.append(ALREADY_120)
 
     if method["gp_after_tax"] is False:
         warnings.append("gp figure is BEFORE Grand Exchange tax (the wiki gives no after-tax figure)")
@@ -110,10 +112,20 @@ def check_method_for_session(method, account, max_minutes, answers):
 # Picking paths A, B and C
 # ---------------------------------------------------------------------------
 
-def gap_to_99(method, account):
-    """Smallest XP-to-99 among the method's skills that are still under 99."""
-    gaps = [xp_to_99(account, s) for s in method["skill"].split("/")]
-    return min(g for g in gaps if g > 0)
+def closest_skill(method, account):
+    """
+    Of the method's skills that still have a next level, the one furthest through
+    its current level, as account.level_progress() describes it. On an exact tie the
+    skill named first wins (max() keeps the first). check_method_for_session has
+    already ruled out methods whose skills are all at 120, so there is always one.
+    """
+    progress = [level_progress(account, s) for s in method["skill"].split("/")]
+    return max((p for p in progress if p is not None), key=lambda p: p["fraction"])
+
+
+def closest_first(method):
+    """Path A's order: furthest through its level first; on a tie, the faster method."""
+    return (-method["_closest"]["fraction"], -method["xp_per_hour_low"])
 
 
 def pick_paths(ready):
@@ -121,8 +133,8 @@ def pick_paths(ready):
     training = [m for m in ready if m["type"] == "training"]
     money = [m for m in ready if m["type"] == "money"]
 
-    # A: closest skill to 99; if two tie, the faster method wins.
-    path_a = min(training, key=lambda m: (m["_gap"], -m["xp_per_hour_low"]), default=None)
+    # A: the skill furthest through its current level; if two tie, the faster method wins.
+    path_a = min(training, key=closest_first, default=None)
 
     # B: most XP per hour, judged on the low end of each range so a wide,
     # optimistic range can't win on its best case. Prefer something other than A.
@@ -144,13 +156,23 @@ def runner_ups(ready, picks, count=RUNNER_UPS):
     path's own rule (the same rules as pick_paths). No method appears twice on the
     page: a picked method is never a runner-up, and A's list is filled first, then
     B's, then C's, each skipping methods already listed above it (the next best one
-    takes its place). Returns [list for A, list for B, list for C].
+    takes its place). Path A's list also shows different skills: a method whose
+    skill is already shown under A is skipped. Returns [list for A, list for B,
+    list for C].
     """
     others = [m for m in ready if not any(m is p for p in picks)]
     training = [m for m in others if m["type"] == "training"]
     money = [m for m in others if m["type"] == "money"]
     # sorted() keeps the methods file's order for ties, like min()/max() in pick_paths.
-    by_closest = sorted(training, key=lambda m: (m["_gap"], -m["xp_per_hour_low"]))
+    # Path A shows different skills: keep only the first (best) method for each skill,
+    # and none for the skill A's own pick already shows.
+    path_a = picks[0]
+    shown_skills = {path_a["_closest"]["skill"]} if path_a else set()
+    by_closest = []
+    for method in sorted(training, key=closest_first):
+        if method["_closest"]["skill"] not in shown_skills:
+            by_closest.append(method)
+            shown_skills.add(method["_closest"]["skill"])
     by_xp = sorted(training, key=lambda m: (m["xp_per_hour_low"], m["xp_per_hour_high"]), reverse=True)
     by_gp = sorted(money, key=lambda m: m["gp_per_hour"], reverse=True)
 
@@ -178,16 +200,21 @@ def also_text(method):
     return f"{method['name']} · {method['skill']} · {rate}"
 
 
+def percent_text(fraction):
+    """e.g. 0.83949 -> '83.9%'. Rounded DOWN, so a level never shows 100.0% before it's reached."""
+    return f"{math.floor(fraction * 1000) / 10:.1f}%"
+
+
 def split_ruled_out(ruled_out):
     """
     Returns (blocked, finished_count). Methods you've finished the skill for
-    ("already 99") or outgrown are just counted, whatever other reasons they
+    ("already 120") or outgrown are just counted, whatever other reasons they
     have: you'll never use them, so a missing quest doesn't matter. Everything
     else (levels too low, quests, your answers, click time) is listed.
     """
     blocked, finished = [], 0
     for method, reasons in ruled_out:
-        if any(r == ALREADY_99 or r.startswith(OUTGROWN) for r in reasons):
+        if any(r == ALREADY_120 or r.startswith(OUTGROWN) for r in reasons):
             finished += 1
         else:
             blocked.append((method, reasons))
@@ -211,13 +238,19 @@ def build_plan(methods, account, max_minutes, answers):
             ruled_out.append((method, blocked))
         else:
             if method["type"] == "training":
-                method["_gap"] = gap_to_99(method, account)
+                method["_closest"] = closest_skill(method, account)
             ready.append(method)
 
     path_a, path_b, path_c = pick_paths(ready)
 
-    why_a = (f"{path_a['skill']} is your closest skill to 99 with a ready method "
-             f"({path_a['_gap']:,.0f} XP left).") if path_a else ""
+    if path_a:
+        closest = path_a["_closest"]
+        # XP left is rounded UP: 0.3 XP short reads "1 XP left", never "0 XP left".
+        why_a = (f"{closest['skill']} is {percent_text(closest['fraction'])} of the way to "
+                 f"{closest['next_level']} ({math.ceil(closest['xp_left']):,} XP left): "
+                 "the furthest of your skills with a ready method.")
+    else:
+        why_a = ""
     why_b = "Highest XP/hr of your ready training methods (judged on the low end of each range)."
     why_c = "Highest gp/hr of your ready money methods."
     # Warn when the ranking compares before-tax and after-tax figures.
@@ -242,15 +275,16 @@ def build_plan(methods, account, max_minutes, answers):
 # ---------------------------------------------------------------------------
 
 def level_change_text(account, skill, xp_low, xp_high):
-    """e.g. 'Mining 96 -> 96-97 (97 is 566,820 XP away)'."""
+    """e.g. 'Mining 96 -> 96-97 (97 is 566,820 XP away)'. Uses the skill's own XP table."""
     now = account["skills"][skill]
+    table = level_table(skill)
     start_level = now["level"]
-    low_level = level_from_xp(now["xp"] + xp_low)
-    high_level = level_from_xp(now["xp"] + xp_high)
+    low_level = level_from_xp(now["xp"] + xp_low, skill)
+    high_level = level_from_xp(now["xp"] + xp_high, skill)
     after = str(low_level) if low_level == high_level else f"{low_level}-{high_level}"
     text = f"{skill} {start_level} -> {after}"
-    if start_level < 120:
-        to_next = LEVEL_XP[start_level] - now["xp"]   # LEVEL_XP[start_level] is the next level
+    if start_level < len(table):
+        to_next = table[start_level] - now["xp"]   # table[start_level] is the next level
         text += f" ({start_level + 1} is {to_next:,.0f} XP away)"
     return text
 

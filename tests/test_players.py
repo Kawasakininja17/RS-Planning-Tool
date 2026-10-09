@@ -4,8 +4,11 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 import players
+
+PROJECT = Path(__file__).resolve().parent.parent
 
 
 class TempPlayersDir(unittest.TestCase):
@@ -32,6 +35,15 @@ class FolderNameTests(unittest.TestCase):
         names = {players.folder_name(n) for n in ("a b", "a-b", "a_b")}
         self.assertEqual(len(names), 3)
 
+    def test_windows_reserved_names_get_a_plus(self):
+        # Windows refuses these as folder names (Microsoft, "Naming Files, Paths, and Namespaces").
+        for name in ("Con", "PRN", "aux", "Nul", "Com1", "com9", "LPT1", "lpt9"):
+            self.assertEqual(players.folder_name(name), name.lower() + "+")
+
+    def test_names_that_only_look_reserved_are_unchanged(self):
+        for name, folder in (("Con Man", "con+man"), ("Com10", "com10"), ("Auxy", "auxy"), ("Com0", "com0")):
+            self.assertEqual(players.folder_name(name), folder)
+
 
 class AnswersTests(TempPlayersDir):
     def test_no_file_means_no_answers(self):
@@ -46,6 +58,11 @@ class AnswersTests(TempPlayersDir):
     def test_file_lives_in_player_folder(self):
         players.save_answer("Hels Glasglo", "smithing-autoheater", True)
         self.assertTrue((players.PLAYERS_DIR / "hels+glasglo" / "answers.json").is_file())
+
+    def test_reserved_name_player_can_save(self):
+        players.save_answer("Aux", "smithing-autoheater", True)
+        self.assertTrue((players.PLAYERS_DIR / "aux+" / "answers.json").is_file())
+        self.assertEqual(players.read_answers("Aux"), {"smithing-autoheater": True})
 
     def test_none_forgets_an_answer(self):
         players.save_answer("Hels Glasglo", "smithing-autoheater", False)
@@ -140,6 +157,22 @@ class KnownPlayersTests(TempPlayersDir):
     def test_no_players_folder_at_all(self):
         players.PLAYERS_DIR = players.PLAYERS_DIR / "does-not-exist"
         self.assertEqual(players.known_players(), [])
+
+
+class DefaultPlayersDirTests(unittest.TestCase):
+    """Where players' folders live: data/players/, or the user's own folder in a bundle."""
+
+    def test_from_source_it_is_data_players(self):
+        with mock.patch.object(players, "is_bundled", return_value=False):
+            self.assertEqual(players.default_players_dir().resolve(), (PROJECT / "data" / "players").resolve())
+
+    def test_in_a_bundle_it_is_the_user_data_folder(self):
+        with mock.patch.object(players, "is_bundled", return_value=True), \
+                mock.patch.object(players, "user_data_dir", return_value=Path("/fake/RS3 Planner")):
+            self.assertEqual(players.default_players_dir(), Path("/fake/RS3 Planner/players"))
+
+    def test_the_tests_themselves_run_from_source(self):
+        self.assertEqual(players.default_players_dir().resolve(), (PROJECT / "data" / "players").resolve())
 
 
 if __name__ == "__main__":

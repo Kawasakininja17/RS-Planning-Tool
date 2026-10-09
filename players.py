@@ -12,6 +12,9 @@ Each player gets a folder under data/players/ (kept out of git):
         snapshots/     XP snapshots, one per fetch
 
 data/players/current.txt remembers the player the app showed last.
+
+In the Windows app (a bundle, see bundle.py) the same folders live in the
+user's own app-data folder instead, e.g. %LOCALAPPDATA%\\RS3 Planner\\players\\.
 """
 
 import json
@@ -19,13 +22,32 @@ import re
 import sys
 from pathlib import Path
 
-PLAYERS_DIR = Path(__file__).parent / "data" / "players"
+from bundle import is_bundled, user_data_dir
+
+
+def default_players_dir():
+    """
+    Where players' folders live: data/players/ next to this file, as always.
+    In a bundle (the Windows app) that would be inside the app itself, which every
+    new version replaces, so it's the user's own app-data folder instead (bundle.py).
+    """
+    if is_bundled():
+        return user_data_dir() / "players"
+    return Path(__file__).parent / "data" / "players"
+
+
+PLAYERS_DIR = default_players_dir()
 
 # Name rules from the RuneScape Wiki "Display name" page: at most 12 characters;
 # letters, numbers, spaces, hyphens and underscores. (New names can't START with
 # - or _, but older names may, so that isn't rejected.)
 MAX_NAME_LENGTH = 12
 NAME_CHARACTERS = re.compile(r"[A-Za-z0-9 _-]+")
+
+# Names Windows refuses for a file or folder (Microsoft's "Naming Files, Paths, and
+# Namespaces" page). Every one of them is also a valid RuneScape name.
+WINDOWS_RESERVED = ({"con", "prn", "aux", "nul"}
+                    | {f"com{n}" for n in range(1, 10)} | {f"lpt{n}" for n in range(1, 10)})
 
 
 # ---------------------------------------------------------------------------
@@ -38,8 +60,14 @@ def folder_name(name):
     A '+' can never be part of a RuneScape name, so two players never share a
     folder. Hyphens and underscores are kept: the wiki's Display name page says
     an underscore is not the same as a space.
+    A name Windows refuses as a folder (like 'Aux') gets a '+' at the end: 'aux+'.
+    No real name ends in '+' (it stands for a space, and names never end in one),
+    so this can't clash with another player.
     """
-    return name.strip().lower().replace(" ", "+")
+    folder = name.strip().lower().replace(" ", "+")
+    if folder in WINDOWS_RESERVED:
+        folder += "+"
+    return folder
 
 
 def player_dir(name):

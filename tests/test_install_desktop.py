@@ -2,6 +2,11 @@
 
 Every test writes into a temporary "home" folder, never the real one, and a
 FakeRun writes down the systemctl commands instead of running them.
+
+Linux only: install_desktop.py writes systemd and .desktop files, which exist
+only on Linux, and its paths are Linux paths. On any other system (for example
+the Windows machine that builds the Windows app) these tests are skipped, each
+with the reason shown.
 """
 
 import io
@@ -21,6 +26,10 @@ from install_desktop import InstallError
 PLAIN = Path("/home/someone/RS-Planning-Tool")
 SPACES = Path("/home/someone/My Games/RS Tool")
 ODD = Path("/home/someone/a`b c")   # a backtick and a space: allowed, but need quoting
+
+# Put on every test class below (see the note at the top).
+LINUX_ONLY = unittest.skipUnless(sys.platform.startswith("linux"),
+                                 "install_desktop.py is for Linux (systemd and .desktop files)")
 
 
 class FakeRun:
@@ -42,6 +51,7 @@ def replies(*values):
     return lambda: values.pop(0) if values else False
 
 
+@LINUX_ONLY
 class QuotingTests(unittest.TestCase):
     def test_systemd_quote_plain(self):
         self.assertEqual(install_desktop.systemd_quote(PLAIN), '"/home/someone/RS-Planning-Tool"')
@@ -57,6 +67,7 @@ class QuotingTests(unittest.TestCase):
         self.assertEqual(install_desktop.desktop_quote(ODD), r'''"/home/someone/a\\`b c"''')
 
 
+@LINUX_ONLY
 class PathProblemTests(unittest.TestCase):
     def test_ordinary_paths_are_fine(self):
         for path in (PLAIN, SPACES, ODD):
@@ -71,6 +82,7 @@ class PathProblemTests(unittest.TestCase):
                                       "or line break, then run the install again.")
 
 
+@LINUX_ONLY
 class TextTests(unittest.TestCase):
     def test_service_text_plain(self):
         lines = install_desktop.service_text(PLAIN).splitlines()
@@ -101,6 +113,7 @@ class TextTests(unittest.TestCase):
                       '"/home/someone/My Games/RS Tool/tools/open_planner.py"', install_desktop.desktop_text(SPACES))
 
 
+@LINUX_ONLY
 class InstallTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -234,6 +247,7 @@ class InstallTests(unittest.TestCase):
         self.assertEqual(self.installed_files(), [])
 
 
+@LINUX_ONLY
 class SudoTests(unittest.TestCase):
     def test_running_with_sudo_is_refused_before_anything_happens(self):
         # With sudo, "home" would be the administrator's (/root), not Chris's.

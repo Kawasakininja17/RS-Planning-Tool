@@ -2,3 +2,8 @@ __pycache__/
 *.pyc
 .venv/
 data/players/
+# The Windows app's build (tools/build_exe.py): its toolbox, work files and output
+.venv-build/
+build/
+dist/
+/RS3 Planner.spec

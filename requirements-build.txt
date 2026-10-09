@@ -1,0 +1,7 @@
+# The build toolbox for the Windows app (tools/build_exe.py). Install it into its
+# own venv, never into .venv/ (the app's):
+#   python3 -m venv .venv-build
+#   .venv-build/bin/pip install -r requirements-build.txt
+nicegui==3.17.1
+pyinstaller==6.22.3
+pillow==12.3.0

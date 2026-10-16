@@ -148,7 +148,7 @@ class InstallTests(unittest.TestCase):
                          install_desktop.service_text(self.project))
         self.assertTrue(lines[0].startswith("Written: "))
         self.assertTrue(lines[1].startswith("Written: "))
-        self.assertIn("The app is running: http://127.0.0.1:8080 (or click the RS3 Planner icon).", lines)
+        self.assertIn("The app is running: http://127.0.0.1:8090 (or click the RS3 Planner icon).", lines)
         self.assertIn("To undo: python3 tools/install_desktop.py --remove", lines)
 
     def test_a_second_identical_install_says_already_up_to_date(self):
@@ -201,7 +201,7 @@ class InstallTests(unittest.TestCase):
         run = FakeRun(fail_on="reset-failed")
         lines = self.install(run=run)
         self.assertEqual(run.commands[-1], ["systemctl", "--user", "restart", "rs3-planner.service"])
-        self.assertIn("The app is running: http://127.0.0.1:8080 (or click the RS3 Planner icon).", lines)
+        self.assertIn("The app is running: http://127.0.0.1:8090 (or click the RS3 Planner icon).", lines)
 
     def test_a_failing_systemctl_stops_with_its_message(self):
         with self.assertRaises(InstallError) as caught:

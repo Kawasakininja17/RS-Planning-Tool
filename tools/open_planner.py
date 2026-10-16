@@ -32,7 +32,7 @@ ICON = PROJECT / "static" / "icons" / "app-icon.svg"
 SERVICE = "rs3-planner"   # the background service's name (tools/install_desktop.py writes it)
 LOG_TAG = "rs3-planner"   # the tag on the app's own lines in the log (SyslogIdentifier in the service)
 HOST = "127.0.0.1"        # must match HOST in app.py (a test checks)
-PORT = 8080               # must match PORT in app.py (a test checks)
+PORT = 8090               # must match PORT in app.py (a test checks)
 
 WAIT_SECONDS = 20         # how long to wait for the app to answer after starting it
 CHECK_EVERY = 0.5         # seconds between checks while waiting

@@ -20,7 +20,7 @@ is fetched once while the app runs, and again only when you press Refresh.
 
 Start it (from the project folder):
     .venv/bin/python app.py
-then open http://127.0.0.1:8080 in your browser. Stop it with Ctrl+C.
+then open http://127.0.0.1:8090 in your browser. Stop it with Ctrl+C.
 
 It listens on 127.0.0.1 only, so other devices on your network can't reach it.
 It also answers only to the names 127.0.0.1 and localhost, and refuses requests
@@ -69,7 +69,7 @@ from snapshots import save_snapshot
 
 HERE = Path(__file__).parent
 HOST = "127.0.0.1"   # this computer only - never 0.0.0.0
-PORT = 8080
+PORT = 8090
 ALLOWED_HOSTS = [HOST, "localhost"]   # the names this app answers to; anything else is refused
 NO_VALUE = "—"       # shown when a value is missing; never a made-up number
 
@@ -1108,7 +1108,7 @@ def switch_on_locks(port):
 def start_port():
     """
     The port to listen on, or None when this copy shouldn't start.
-    From the project folder: PORT (8080), exactly as always.
+    From the project folder: PORT (8090), exactly as always.
     As the Windows app (a bundle): 8095, or the first free port after it when
     another program has 8095. If RS3 Planner already runs on 8095 (a second
     double-click), the browser is opened there instead and None is returned.

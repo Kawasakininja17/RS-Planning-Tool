@@ -6,7 +6,7 @@ Refuses requests that another website started.
 
 When a web page talks to a server, the browser adds an "Origin" label naming
 the site the page came from (for example "https://evil.example"). The
-planner's own pages carry "http://127.0.0.1:8080" or "http://localhost:8080".
+planner's own pages carry "http://127.0.0.1:8090" or "http://localhost:8090".
 Anything else means some other website is trying to use the planner behind
 your back, so the request is refused before the app sees it.
 
@@ -26,7 +26,7 @@ REFUSAL_TEXT = "Refused: this request came from another website."
 
 
 def allowed_origins(names, port):
-    """The Origin labels the app's own pages send: one per name, e.g. 'http://127.0.0.1:8080'."""
+    """The Origin labels the app's own pages send: one per name, e.g. 'http://127.0.0.1:8090'."""
     return {f"http://{name}:{port}" for name in names}
 
 

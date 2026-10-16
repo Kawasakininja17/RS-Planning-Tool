@@ -16,7 +16,7 @@ answers the questions that only matter there:
   stop()             say what went wrong and wait, so the window doesn't vanish
 
 Run from the project folder (the service, the terminal, the tests), none of
-this changes anything: player data stays in data/players/ and the port 8090.
+this changes anything: player data stays in data/players/ and the port 8097.
 
 Standard library only, so the tests can load it without NiceGUI.
 """
@@ -30,7 +30,7 @@ import urllib.request
 from pathlib import Path
 
 APP_NAME = "RS3 Planner"
-PREFERRED_PORT = 8095   # the Windows app's usual port (the project version uses 8090)
+PREFERRED_PORT = 8095   # the Windows app's usual port (the project version uses 8097)
 LAST_PORT = 8999        # the end of NiceGUI's own port search (native.find_open_port)
 VERSION_FILE = Path(__file__).parent / "version.txt"   # in a bundle: beside the bundled code
 TITLE = re.compile(r"<title>[^<]*RS3 Planner</title>")  # every page's title ends in "RS3 Planner"

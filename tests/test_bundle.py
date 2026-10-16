@@ -269,8 +269,8 @@ class AppStartTests(unittest.TestCase):
         self.assertTrue(re.search(r'(?m)^if __name__ in \{"__main__", "__mp_main__"\}:\n(?:    #.*\n)*    freeze_support\(\)',
                                   self.text), "freeze_support() must be the first statement under the main guard")
 
-    def test_from_source_the_port_is_8090(self):
-        self.assertTrue(re.search(r"(?m)^PORT = 8090$", self.text), "PORT must be 8090")
+    def test_from_source_the_port_is_8097(self):
+        self.assertTrue(re.search(r"(?m)^PORT = 8097$", self.text), "PORT must be 8097")
         self.assertTrue(re.search(r"(?m)^    if not is_bundled\(\):\n        return PORT$", self.text),
                         "start_port() must return PORT when not bundled")
 

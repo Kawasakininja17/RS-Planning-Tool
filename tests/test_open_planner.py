@@ -71,7 +71,7 @@ class SettingsTests(unittest.TestCase):
         self.assertEqual((open_planner.HOST, open_planner.PORT), (host, port))
 
     def test_app_url(self):
-        self.assertEqual(open_planner.app_url(), "http://127.0.0.1:8090")
+        self.assertEqual(open_planner.app_url(), "http://127.0.0.1:8097")
 
     def test_full_log_line(self):
         self.assertEqual(open_planner.full_log_line(), "Full log: journalctl --user -u rs3-planner")
@@ -172,7 +172,7 @@ class RealDesktopTests(unittest.TestCase):
         with mock.patch("subprocess.run") as run:
             open_planner.Desktop().open_browser()
         args, kwargs = run.call_args
-        self.assertEqual(args[0], ["xdg-open", "http://127.0.0.1:8090"])
+        self.assertEqual(args[0], ["xdg-open", "http://127.0.0.1:8097"])
         self.assertIs(kwargs["stdout"], subprocess.DEVNULL)
         self.assertIs(kwargs["stderr"], subprocess.DEVNULL)
 

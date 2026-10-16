@@ -104,7 +104,7 @@ From the project folder:
 .venv\Scripts\python app.py
 ```
 
-Then open **http://127.0.0.1:8090** in your browser. To stop the app, press
+Then open **http://127.0.0.1:8097** in your browser. To stop the app, press
 **Ctrl+C** in the terminal; it says "RS3 Planner stopped."
 
 ### Updating later
